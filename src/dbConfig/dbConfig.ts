@@ -10,7 +10,7 @@ export async function connectToDatabase() {
 		await mongoose.connect(mongoUri);
         const connection = mongoose.connection;
         connection.on('error', (error) => {
-            console.error('MongoDB connection error:', error);A
+            console.error('MongoDB connection error:', error);
             exit(1);
         });
         connection.once('open', () => {
