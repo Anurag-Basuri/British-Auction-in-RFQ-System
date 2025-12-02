@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function ClientComponent() {
+export default function SignUp() {
 	const [mounted, setMounted] = useState(false);
 	const [count, setCount] = useState(0);
 
