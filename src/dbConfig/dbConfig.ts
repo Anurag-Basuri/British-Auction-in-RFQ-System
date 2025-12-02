@@ -1,3 +1,5 @@
+import mongoose from "mongoose";
+
 export async function connectToDatabase() {
 	try {
 		const mongoUri = process.env.MONGODB_URI;
