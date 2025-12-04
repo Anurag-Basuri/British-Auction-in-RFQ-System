@@ -1,4 +1,6 @@
 import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
 const userSchema = new mongoose.Schema({
 	name: {
@@ -33,7 +35,25 @@ const userSchema = new mongoose.Schema({
 	},
 });
 
+// Password hashing
+userSchema.pre('save', async function() {
+	if (this.isModified('password')) {
+		const salt = await bcrypt.genSalt(10);
+		this.password = await bcrypt.hash(this.password, salt);
+	}
+});
 
+// password comparison
+userSchema.methods.comparePassword = async function(password: string) {
+	return await bcrypt.compare(password, this.password);
+};
+
+// accessToken generation
+userSchema.methods.generateAccessToken = function() {
+	return jwt.sign({ id: this._id }, process.env.JWT_SECRET, {
+		expiresIn: process.env.JWT_EXPIRES_IN,
+	});
+};
 
 userSchema.pre('save', function() {
 	this.updatedAt = new Date();
