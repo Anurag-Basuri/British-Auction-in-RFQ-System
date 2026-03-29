@@ -660,7 +660,7 @@ This is currently a **development prototype**. In production, passwords should b
 
 ## 📄 License
 
-This project is **UNLICENSED** — private use only.
+This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
 
 ---
 
