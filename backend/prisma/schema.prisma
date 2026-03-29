@@ -1,0 +1,69 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = "postgresql://postgres:postgres@localhost:5432/rfq_system?schema=public"
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  role      Role     @default(SUPPLIER)
+  rfqs      Rfq[]    @relation("BuyerRfqs")
+  bids      Bid[]    @relation("SupplierBids")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum Role {
+  BUYER
+  SUPPLIER
+}
+
+model Rfq {
+  id                  Int      @id @default(autoincrement())
+  title               String
+  description         String?
+  start_time          DateTime
+  close_time          DateTime
+  forced_close_time   DateTime
+  trigger_window_mins Int      // X minutes before close to trigger extension
+  extension_mins      Int      // Y minutes to extend if triggered
+  trigger_type        TriggerType
+  status              RfqStatus @default(DRAFT)
+  buyerId             Int
+  buyer               User      @relation("BuyerRfqs", fields: [buyerId], references: [id])
+  bids                Bid[]
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+}
+
+enum TriggerType {
+  ANY_BID
+  RANK_CHANGE
+  L1_CHANGE
+}
+
+enum RfqStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
+}
+
+model Bid {
+  id         Int      @id @default(autoincrement())
+  rfqId      Int
+  rfq        Rfq      @relation(fields: [rfqId], references: [id])
+  supplierId Int
+  supplier   User     @relation("SupplierBids", fields: [supplierId], references: [id])
+  price      Float
+  timestamp  DateTime @default(now())
+  
+  @@index([rfqId, price(sort: Asc), timestamp(sort: Asc)])
+}
