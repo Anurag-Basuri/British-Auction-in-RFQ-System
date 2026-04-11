@@ -13,6 +13,7 @@ export async function create(buyerId: number, dto: CreateRfqDto) {
       start_time: new Date(dto.start_time),
       close_time: new Date(dto.close_time),
       forced_close_time: new Date(dto.forced_close_time),
+      pickup_date: dto.pickup_date ? new Date(dto.pickup_date) : null,
       buyerId,
     },
   });
@@ -24,25 +25,41 @@ export async function create(buyerId: number, dto: CreateRfqDto) {
 }
 
 /**
- * List all RFQs with buyer info and bid counts.
+ * List all RFQs with buyer info, bid counts, and current lowest bid.
  */
 export async function findAll() {
-  return prisma.rfq.findMany({
+  const rfqs = await prisma.rfq.findMany({
     include: {
       buyer: { select: { email: true } },
       _count: { select: { bids: true } },
+      bids: {
+        orderBy: { price: 'asc' },
+        take: 1,
+        select: { price: true }
+      }
     },
+  });
+
+  return rfqs.map((rfq: any) => {
+    const { bids, ...rest } = rfq;
+    return {
+      ...rest,
+      currentLowestBid: bids.length > 0 ? bids[0].price : null
+    };
   });
 }
 
 /**
- * Get full RFQ details with ordered bids.
+ * Get full RFQ details with ordered bids and activity log.
  */
 export async function findOne(id: number) {
   const rfq = await prisma.rfq.findUnique({
     where: { id },
     include: {
       buyer: { select: { email: true } },
+      extensionLogs: {
+        orderBy: { createdAt: 'desc' }
+      },
       bids: {
         orderBy: [
           { price: 'asc' },
