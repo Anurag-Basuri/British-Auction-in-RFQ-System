@@ -3,6 +3,9 @@ import * as bidService from '../services/bid.service.js';
 import { scheduleClosure } from '../scheduler/queue.js';
 import { broadcastToRfq } from '../lib/socket.js';
 import { authMiddleware } from '../middleware/auth.middleware.js';
+import { requireRole } from '../middleware/role.middleware.js';
+import { validate } from '../middleware/validate.middleware.js';
+import { createBidSchema } from '../schemas/bid.schema.js';
 
 const router = Router();
 
@@ -11,7 +14,7 @@ const router = Router();
  * Place a bid on an active auction (Supplier only).
  * Handles extension scheduling and WebSocket broadcasting.
  */
-router.post('/:rfqId/bid', authMiddleware, async (req: Request, res: Response) => {
+router.post('/:rfqId/bid', authMiddleware, requireRole(['SUPPLIER']), validate(createBidSchema), async (req: Request, res: Response) => {
   try {
     const rfqId = +req.params.rfqId;
     const user = (req as any).user;

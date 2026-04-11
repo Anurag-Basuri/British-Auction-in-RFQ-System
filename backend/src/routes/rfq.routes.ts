@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import * as rfqService from '../services/rfq.service.js';
 import { authMiddleware } from '../middleware/auth.middleware.js';
+import { requireRole } from '../middleware/role.middleware.js';
 import { validate } from '../middleware/validate.middleware.js';
 import { createRfqSchema } from '../schemas/rfq.schema.js';
 
@@ -13,7 +14,7 @@ router.use(authMiddleware);
  * POST /rfq
  * Create a new RFQ auction (Buyer only).
  */
-router.post('/', validate(createRfqSchema), async (req: Request, res: Response) => {
+router.post('/', requireRole(['BUYER']), validate(createRfqSchema), async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
     const result = await rfqService.create(user.sub, req.body);

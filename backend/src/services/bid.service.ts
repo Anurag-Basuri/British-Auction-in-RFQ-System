@@ -14,6 +14,21 @@ export async function createBid(rfqId: number, supplierId: number, price: number
     if (!rfq) throw { status: 400, message: 'RFQ not found' };
     if (rfq.status !== 'ACTIVE') throw { status: 400, message: 'RFQ is not active' };
 
+    // Step 1.5: Bid Validation Rule - Ensure new bid is strictly lower than the supplier's previous bid.
+    const previousBid = await tx.bid.findFirst({
+      where: {
+        rfqId: rfqId,
+        supplierId: supplierId,
+      },
+      orderBy: {
+        price: 'asc', // Get their lowest known bid for this RFQ 
+      },
+    });
+
+    if (previousBid && price >= previousBid.price) {
+      throw { status: 400, message: `Your new bid ($${price}) must be lower than your previous lowest bid ($${previousBid.price}).` };
+    }
+
     // Step 2: Core trigger and extension evaluation.
     // This part ensures no race conditions on close_time due to transactions.
     const newCloseTime = await evaluateExtension(rfqId, price, timestamp);
