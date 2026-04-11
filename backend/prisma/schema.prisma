@@ -33,6 +33,7 @@ model Rfq {
   start_time          DateTime
   close_time          DateTime
   forced_close_time   DateTime
+  pickup_date         DateTime?
   trigger_window_mins Int      // X minutes before close to trigger extension
   extension_mins      Int      // Y minutes to extend if triggered
   trigger_type        TriggerType
@@ -40,6 +41,7 @@ model Rfq {
   buyerId             Int
   buyer               User      @relation("BuyerRfqs", fields: [buyerId], references: [id])
   bids                Bid[]
+  extensionLogs       ExtensionLog[]
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 }
@@ -57,13 +59,41 @@ enum RfqStatus {
 }
 
 model Bid {
-  id         Int      @id @default(autoincrement())
-  rfqId      Int
-  rfq        Rfq      @relation(fields: [rfqId], references: [id])
-  supplierId Int
-  supplier   User     @relation("SupplierBids", fields: [supplierId], references: [id])
-  price      Float
-  timestamp  DateTime @default(now())
+  id                  Int      @id @default(autoincrement())
+  rfqId               Int
+  rfq                 Rfq      @relation(fields: [rfqId], references: [id])
+  supplierId          Int
+  supplier            User     @relation("SupplierBids", fields: [supplierId], references: [id])
+  
+  // Detailed Quote Submission Breakdown
+  freight_charges     Float
+  origin_charges      Float
+  destination_charges Float
+  price               Float    // Total cost (freight + origin + destination)
+  
+  transit_time        String   // e.g. "14 Days"
+  quote_validity      DateTime
+  
+  timestamp           DateTime @default(now())
+  
+  triggeringExtensions ExtensionLog[]
   
   @@index([rfqId, price(sort: Asc), timestamp(sort: Asc)])
+}
+
+model ExtensionLog {
+  id              Int      @id @default(autoincrement())
+  rfqId           Int
+  rfq             Rfq      @relation(fields: [rfqId], references: [id])
+  
+  // The bid that triggered the event (nullable just in case)
+  triggerBidId    Int?     
+  triggerBid      Bid?     @relation(fields: [triggerBidId], references: [id])
+  
+  reason          String   // e.g. "Extended by Y mins due to Supplier Rank Change"
+  extended_mins   Int      // Amount of minutes added
+  previous_close  DateTime // What the close time was *before* this extension
+  new_close       DateTime // What it was updated to become
+  
+  createdAt       DateTime @default(now())
 }

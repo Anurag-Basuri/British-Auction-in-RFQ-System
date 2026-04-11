@@ -18,9 +18,17 @@ router.post('/:rfqId/bid', authMiddleware, requireRole(['SUPPLIER']), validate(c
   try {
     const rfqId = +req.params.rfqId;
     const user = (req as any).user;
-    const price = req.body.price;
+    
+    // Destructure properties from Zod payload
+    const { freight_charges, origin_charges, destination_charges, transit_time, quote_validity } = req.body;
 
-    const result = await bidService.createBid(rfqId, user.sub, price);
+    const result = await bidService.createBid(rfqId, user.sub, {
+      freight_charges,
+      origin_charges,
+      destination_charges,
+      transit_time,
+      quote_validity: new Date(quote_validity)
+    });
 
     // If extension occurred, reschedule the BullMQ closure job.
     if (result.close_time) {
