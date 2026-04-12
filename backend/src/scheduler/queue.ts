@@ -1,7 +1,7 @@
 import { Queue } from 'bullmq';
-import { redisConnectionOptions } from '../lib/redis.js';
+import { createRedisConnection } from '../lib/redis.js';
 
-const auctionQueue = new Queue('auction', { connection: redisConnectionOptions });
+const auctionQueue = new Queue('auction', { connection: createRedisConnection('queue') });
 
 /**
  * Schedule (or reschedule) an auction closure job.

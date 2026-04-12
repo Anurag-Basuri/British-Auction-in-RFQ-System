@@ -1,5 +1,5 @@
 import { Worker } from 'bullmq';
-import { redisConnectionOptions } from '../lib/redis.js';
+import { createRedisConnection } from '../lib/redis.js';
 import { prisma } from '../lib/prisma.js';
 import { broadcastToRfq } from '../lib/socket.js';
 import { logger } from '../lib/logger.js';
@@ -32,7 +32,7 @@ export function startWorker() {
         broadcastToRfq(rfqId, 'AUCTION_CLOSED', { rfqId, status: 'CLOSED' });
       }
     },
-    { connection: redisConnectionOptions }
+    { connection: createRedisConnection('worker') }
   );
 
   activeWorker.on('failed', (job, err) => {

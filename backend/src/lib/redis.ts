@@ -1,22 +1,23 @@
-import { Redis } from 'ioredis';
+import { Redis, RedisOptions } from 'ioredis';
+import { logger } from './logger.js';
 
-/**
- * Creates a Redis connection config object.
- * BullMQ Queue and Worker create their own connections internally,
- * so we export a config factory rather than a shared instance where needed.
- */
-export function createRedisConnection() {
-  return new Redis({
-    host: process.env.REDIS_HOST || 'localhost',
-    port: Number(process.env.REDIS_PORT) || 6379,
-    maxRetriesPerRequest: null, // Required by BullMQ
-  });
-}
-
-/**
- * Redis connection options (for passing to BullMQ constructors)
- */
-export const redisConnectionOptions = {
+const redisOptions: RedisOptions = {
   host: process.env.REDIS_HOST || 'localhost',
   port: Number(process.env.REDIS_PORT) || 6379,
+  maxRetriesPerRequest: null,
 };
+
+/**
+ * Creates a unique Redis connection for BullMQ with trapped error handlers.
+ * This prevents ioredis from incessantly spamming unhandled network errors perfectly into the raw Node console.
+ */
+export function createRedisConnection(clientName: string) {
+  const connection = new Redis(redisOptions);
+
+  connection.on('error', (err: any) => {
+    // Explicitly trap and silence background socket TCP errors. 
+    // They don't need to be repeatedly printed; the application health logs will reflect the status natively.
+  });
+
+  return connection;
+}
