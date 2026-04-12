@@ -1,5 +1,6 @@
 import { prisma } from '../lib/prisma.js';
 import { evaluateExtension } from './auction.service.js';
+import { ApiError } from '../utils/ApiError.js';
 
 /**
  * Create a bid within a Prisma transaction to prevent race conditions.
@@ -13,8 +14,8 @@ export async function createBid(rfqId: number, supplierId: number, dto: { freigh
   return prisma.$transaction(async (tx: any) => {
     // Step 1: Validate RFQ exists and is Active.
     const rfq = await tx.rfq.findUnique({ where: { id: rfqId } });
-    if (!rfq) throw { status: 400, message: 'RFQ not found' };
-    if (rfq.status !== 'ACTIVE') throw { status: 400, message: 'RFQ is not active' };
+    if (!rfq) throw new ApiError(404, 'RFQ not found');
+    if (rfq.status !== 'ACTIVE') throw new ApiError(400, 'RFQ is not active');
 
     // Step 1.5: Bid Validation Rule - Ensure new bid is strictly lower than the supplier's previous bid.
     const previousBid = await tx.bid.findFirst({
@@ -28,7 +29,7 @@ export async function createBid(rfqId: number, supplierId: number, dto: { freigh
     });
 
     if (previousBid && price >= previousBid.price) {
-      throw { status: 400, message: `Your new total price ($${price}) must be lower than your previous lowest bid ($${previousBid.price}).` };
+      throw new ApiError(400, `Your new total price ($${price}) must be lower than your previous lowest bid ($${previousBid.price}).`);
     }
 
     // Step 2: Core trigger and extension evaluation.
