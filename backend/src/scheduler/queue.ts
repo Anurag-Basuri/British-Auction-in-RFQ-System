@@ -1,7 +1,13 @@
 import { Queue } from 'bullmq';
 import { createRedisConnection } from '../lib/redis.js';
+import { logger } from '../lib/logger.js';
 
-const auctionQueue = new Queue('auction', { connection: createRedisConnection('queue') });
+let auctionQueue: Queue | null = null;
+
+export function initQueue() {
+  auctionQueue = new Queue('auction', { connection: createRedisConnection('queue') });
+  logger.info('Auction Queue engine initialized natively.');
+}
 
 /**
  * Schedule (or reschedule) an auction closure job.
@@ -9,6 +15,11 @@ const auctionQueue = new Queue('auction', { connection: createRedisConnection('q
  * then creates a new delayed job.
  */
 export async function scheduleClosure(rfqId: number, closeTime: Date) {
+  if (!auctionQueue) {
+    logger.warn('Redis queue offline natively. Skipping scheduling.');
+    return;
+  }
+  
   const delay = closeTime.getTime() - Date.now();
 
   // Remove existing jobs for this RFQ to avoid duplicate closures.

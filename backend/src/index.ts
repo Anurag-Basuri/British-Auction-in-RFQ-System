@@ -2,6 +2,7 @@ import { createServer } from 'http';
 import { app } from './app.js';
 import { initSocketServer, getSocketServer } from './lib/socket.js';
 import { startWorker, getWorker } from './scheduler/worker.js';
+import { initQueue } from './scheduler/queue.js';
 import { env } from './config/env.js';
 import { logger } from './lib/logger.js';
 import { prisma } from './lib/prisma.js';
@@ -29,6 +30,7 @@ async function bootstrap() {
   }
 
   // 2. Check Redis Connection
+  let isRedisOnline = false;
   try {
     const redisTest = createRedisConnection('startupCheck');
     await new Promise<void>((resolve, reject) => {
@@ -40,16 +42,18 @@ async function bootstrap() {
       redisTest.on('ready', () => {
         if (!isDone) { isDone = true; clearTimeout(timeout); redisTest.disconnect(); resolve(); }
       });
-      // We don't listen to 'error' directly here because createRedisConnection provides an empty 'error' listener that prevents node from crashing.
-      // The timeout captures the connection failure gracefully!
     });
+    isRedisOnline = true;
     logger.info('✅ Connected to Redis');
   } catch (err) {
-    logger.warn('⚠️ Redis offline: BullMQ background services are paused');
+    logger.warn('⚠️ Redis offline: BullMQ background services are gracefully paused');
   }
 
-  // 3. Start Background Worker (it will auto-retry Redis silently thanks to our fix)
-  startWorker();
+  // 3. Start Background Worker ONLY if Redis is confirmed online
+  if (isRedisOnline) {
+    initQueue();
+    startWorker();
+  }
 
   // 4. Start HTTP Server REGARDLESS
   server = httpServer.listen(PORT, () => {
