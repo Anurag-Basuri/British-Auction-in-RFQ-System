@@ -1,173 +1,246 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import Header from '@/app/header';
-import { io, Socket } from 'socket.io-client';
+import { useEffect, useState, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'next/navigation';
-import { Clock, TrendingDown, Target, Zap, AlertTriangle, Users } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import Header from '@/app/header';
+import { rfqService } from '../../../../services/rfq.service';
+import { socketClient } from '../../../../lib/socket';
+import type { RFQDetail, Bid } from '../../../../types/api';
+import { Clock, AlertTriangle, Target, Zap, Users, Trophy, TrendingDown, ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
 
-interface Bid {
-  id: number;
-  price: number;
-  timestamp: string;
-  supplier: { email: string };
-}
+function useCountdown(closeTime: string | undefined) {
+  const [timeLeft, setTimeLeft] = useState('');
+  const [isUrgent, setIsUrgent] = useState(false);
 
-interface RFQ {
-  id: number;
-  title: string;
-  close_time: string;
-  forced_close_time: string;
-  status: 'ACTIVE' | 'CLOSED';
-  bids: Bid[];
+  useEffect(() => {
+    if (!closeTime) return;
+    const timer = setInterval(() => {
+      const diff = new Date(closeTime).getTime() - Date.now();
+      if (diff <= 0) {
+        setTimeLeft('CLOSED');
+        setIsUrgent(false);
+        clearInterval(timer);
+      } else {
+        const hrs = Math.floor(diff / 3600000);
+        const mins = Math.floor((diff % 3600000) / 60000);
+        const secs = Math.floor((diff % 60000) / 1000);
+        setTimeLeft(hrs > 0 ? `${hrs}h ${mins}m ${secs}s` : `${mins}m ${secs}s`);
+        setIsUrgent(diff < 120000); // under 2 mins
+      }
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [closeTime]);
+
+  return { timeLeft, isUrgent };
 }
 
 export default function BuyerLiveAuction() {
   const { id } = useParams();
-  const [rfq, setRfq] = useState<RFQ | null>(null);
-  const [socket, setSocket] = useState<Socket | null>(null);
-  const [timeLeft, setTimeLeft] = useState<string>('');
+  const rfqId = Number(id);
+  const queryClient = useQueryClient();
+  const [extended, setExtended] = useState(false);
 
+  const { data: rfq, isLoading } = useQuery<RFQDetail>({
+    queryKey: ['rfq', rfqId],
+    queryFn: () => rfqService.getRfqById(rfqId),
+    enabled: !!rfqId,
+    refetchInterval: 15000,
+  });
+
+  const { timeLeft, isUrgent } = useCountdown(rfq?.close_time);
+
+  // Socket events
   useEffect(() => {
-    if (!id) return;
-    fetchRfq();
-    const s = io('http://localhost:3000');
-    s.emit('join-rfq', +id);
+    if (!rfqId) return;
+    const socket = socketClient.connect();
+    socketClient.joinRfqRoom(rfqId);
 
-    s.on('BID_PLACED', (newBid: Bid) => {
-      setRfq(prev => prev ? ({ ...prev, bids: [newBid, ...prev.bids].sort((a,b) => a.price - b.price || new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()) }) : null);
+    socket?.on('BID_PLACED', (newBid: Bid) => {
+      queryClient.setQueryData<RFQDetail>(['rfq', rfqId], (old) => {
+        if (!old) return old;
+        const updatedBids = [newBid, ...old.bids].sort((a, b) => a.price - b.price);
+        return { ...old, bids: updatedBids };
+      });
     });
 
-    s.on('AUCTION_EXTENDED', ({ new_close }) => {
-      setRfq(prev => prev ? ({ ...prev, close_time: new_close }) : null);
+    socket?.on('AUCTION_EXTENDED', ({ new_close }: { new_close: string }) => {
+      queryClient.setQueryData<RFQDetail>(['rfq', rfqId], (old) => {
+        if (!old) return old;
+        return { ...old, close_time: new_close };
+      });
+      setExtended(true);
+      setTimeout(() => setExtended(false), 3000);
     });
 
-    s.on('AUCTION_CLOSED', () => {
-      setRfq(prev => prev ? ({ ...prev, status: 'CLOSED' }) : null);
+    socket?.on('AUCTION_CLOSED', () => {
+      queryClient.setQueryData<RFQDetail>(['rfq', rfqId], (old) => {
+        if (!old) return old;
+        return { ...old, status: 'CLOSED' };
+      });
     });
 
-    setSocket(s);
-    return () => { s.disconnect(); };
-  }, [id]);
+    return () => {
+      socketClient.leaveRfqRoom(rfqId);
+    };
+  }, [rfqId, queryClient]);
 
-  useEffect(() => {
-    if (!rfq) return;
-    const timer = setInterval(() => {
-      const now = new Date().getTime();
-      const end = new Date(rfq.close_time).getTime();
-      const diff = end - now;
+  if (isLoading || !rfq) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-primary)' }}>
+        <div className="text-center space-y-4">
+          <div className="skeleton w-64 h-8 rounded-xl mx-auto" />
+          <div className="skeleton w-40 h-4 rounded mx-auto" />
+        </div>
+      </div>
+    );
+  }
 
-      if (diff <= 0) {
-        setTimeLeft('CLOSED');
-        clearInterval(timer);
-      } else {
-        const mins = Math.floor(diff / 60000);
-        const secs = Math.floor((diff % 60000) / 1000);
-        setTimeLeft(`${mins}m ${secs}s`);
-      }
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [rfq]);
-
-  const fetchRfq = async () => {
-    const res = await fetch(`http://localhost:3000/rfq/${id}`, {
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-    });
-    if (res.ok) setRfq(await res.json());
-  };
-
-  if (!rfq) return <div className="min-h-screen bg-[#0a0a0b] flex items-center justify-center text-white font-bold text-2xl animate-pulse">Initializing Command Console...</div>;
-
-  const l1Price = rfq.bids[0]?.price || 'N/A';
-  const totalExtensions = Math.floor((new Date(rfq.close_time).getTime() - new Date().getTime()) / 60000); // Mock-up logic
+  const sortedBids = [...rfq.bids].sort((a, b) => a.price - b.price);
+  const l1Price = sortedBids[0]?.price;
+  const uniqueSuppliers = new Set(rfq.bids.map(b => b.supplierId)).size;
+  const avgPrice = rfq.bids.length > 0 ? rfq.bids.reduce((a, b) => a + b.price, 0) / rfq.bids.length : 0;
 
   return (
-    <div className="min-h-screen bg-[#0a0a0b] pt-24 pb-12 px-8">
+    <div className="min-h-screen pt-24 pb-12 px-8" style={{ background: 'var(--bg-primary)' }}>
       <Header />
       <div className="max-w-7xl mx-auto space-y-8">
-        
-        {/* Header Section */}
-        <div className="premium-card p-10 bg-linear-to-r from-[#141417] via-[#1a1a1e] to-[#141417] flex justify-between items-center border border-indigo-500/20">
-          <div className="space-y-4">
-            <h2 className="text-4xl font-extrabold tracking-tight">{rfq.title}</h2>
-            <div className="flex gap-8 text-sm">
-              <div className="flex items-center gap-2 text-gray-400">
-                <Clock size={16} className="text-indigo-400"/> Countdown: <span className="text-white font-mono font-bold">{timeLeft}</span>
+
+        {/* Top Command Bar */}
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="glass-card p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6"
+        >
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <Link href="/buyer" className="p-1.5 rounded-lg hover:bg-white/5 text-zinc-500 hover:text-white transition-all">
+                <ArrowLeft size={18} />
+              </Link>
+              <h2 className="text-3xl font-bold tracking-tight">{rfq.title}</h2>
+              <span className={`badge ${rfq.status === 'ACTIVE' ? 'badge-active' : 'badge-closed'}`}>
+                {rfq.status === 'ACTIVE' && <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />}
+                {rfq.status}
+              </span>
+            </div>
+            <div className="flex gap-6 text-sm">
+              <div className="flex items-center gap-2 text-zinc-500">
+                <Clock size={14} className="text-indigo-400" />
+                <span>Countdown:</span>
+                <span className={`font-mono font-bold ${isUrgent ? 'animate-urgency' : 'text-white'} ${extended ? 'text-amber-400' : ''}`}>
+                  {timeLeft}
+                </span>
               </div>
-              <div className="flex items-center gap-2 text-gray-400">
-                <AlertTriangle size={16} className="text-red-400"/> Hard Close: <span className="text-white font-mono">{new Date(rfq.forced_close_time).toLocaleTimeString()}</span>
+              <div className="flex items-center gap-2 text-zinc-500">
+                <AlertTriangle size={14} className="text-red-400" />
+                <span>Hard Close:</span>
+                <span className="text-white font-mono text-xs">{new Date(rfq.forced_close_time).toLocaleTimeString()}</span>
               </div>
             </div>
           </div>
-          <div className="text-right flex items-center gap-6">
-            <div className="px-6 py-4 bg-green-500/10 rounded-2xl border border-green-500/20 text-center">
+
+          <div className="flex items-center gap-4">
+            <div className="px-6 py-4 rounded-2xl bg-green-500/10 border border-green-500/20 text-center">
               <p className="text-[10px] text-green-400 font-bold uppercase mb-1">Current L1</p>
-              <p className="text-3xl font-black text-white">${l1Price}</p>
-            </div>
-            <div className={`px-6 py-4 rounded-2xl border flex flex-col justify-center items-center ${rfq.status === 'ACTIVE' ? 'bg-indigo-500/10 border-indigo-500/20' : 'bg-red-500/10 border-red-500/20'}`}>
-              <p className="text-[10px] font-bold uppercase mb-1">{rfq.status === 'ACTIVE' ? 'Monitoring' : 'Finalized'}</p>
-              <div className={`w-3 h-3 rounded-full ${rfq.status === 'ACTIVE' ? 'bg-indigo-500 animate-pulse' : 'bg-red-500'}`}></div>
+              <p className="text-3xl font-black text-white font-mono">{l1Price != null ? `$${l1Price.toFixed(2)}` : '--'}</p>
             </div>
           </div>
-        </div>
+        </motion.div>
+
+        {/* Extension flash */}
+        <AnimatePresence>
+          {extended && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-xl p-4 text-center font-semibold text-sm flex items-center justify-center gap-2"
+            >
+              <Zap size={16} /> Auction Extended! Timer has been reset.
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Main Leaderboard */}
-          <div className="lg:col-span-3 premium-card overflow-hidden h-[600px] flex flex-col">
-            <div className="p-6 border-b border-[#1f2937] bg-[#141417] flex justify-between items-center">
-              <h3 className="text-lg font-bold flex items-center gap-2"><Target size={20} className="text-indigo-500"/> Real-time Supplier Ranking</h3>
-              <span className="bg-indigo-500 text-white text-[10px] px-2 py-1 rounded font-bold">{rfq.bids.length} TOTAL BIDS</span>
+          {/* Leaderboard */}
+          <div className="lg:col-span-3 glass-card overflow-hidden flex flex-col" style={{ height: '600px' }}>
+            <div className="p-6 border-b border-white/[0.04] flex justify-between items-center">
+              <h3 className="text-lg font-bold flex items-center gap-2">
+                <Target size={18} className="text-indigo-400" /> Real-time Supplier Ranking
+              </h3>
+              <span className="badge badge-active">{rfq.bids.length} BIDS</span>
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
-              {rfq.bids.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-gray-500 space-y-4">
-                  <Users size={48} className="opacity-20"/>
-                  <p className="font-medium">No bids submitted yet.</p>
+              {sortedBids.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-zinc-600 space-y-3">
+                  <Users size={48} className="opacity-30" />
+                  <p className="font-medium">Waiting for bids...</p>
                 </div>
-              ) : rfq.bids.map((bid, i) => (
-                <div key={bid.id} className={`p-5 rounded-2xl flex justify-between items-center transition-all ${
-                  i === 0 ? 'bg-green-500/10 border border-green-500/20 shadow-lg shadow-green-500/5' : 'bg-[#1e1e21] border border-transparent'
-                }`}>
-                  <div className="flex items-center gap-6">
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl font-black ${
-                      i === 0 ? 'bg-green-500 text-black' : 'bg-[#2a2a2e] text-gray-400'
-                    }`}>
-                      {i + 1}
-                    </div>
-                    <div>
-                      <p className="font-bold text-lg text-white">{bid.supplier.email}</p>
-                      <p className="text-xs text-gray-500 font-medium uppercase tracking-widest">{new Date(bid.timestamp).toLocaleString()}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className={`text-2xl font-mono font-black ${i === 0 ? 'text-green-400' : 'text-white'}`}>${bid.price}</p>
-                    <p className="text-[10px] text-gray-600 font-bold uppercase">Confirmed Transaction</p>
-                  </div>
-                </div>
-              ))}
+              ) : (
+                <AnimatePresence mode="popLayout">
+                  {sortedBids.map((bid, i) => (
+                    <motion.div
+                      key={bid.id}
+                      layout
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className={`p-5 rounded-2xl flex justify-between items-center ${
+                        i === 0
+                          ? 'bg-green-500/10 border border-green-500/20 shadow-lg shadow-green-500/5'
+                          : 'bg-white/[0.02] border border-white/[0.04]'
+                      }`}
+                    >
+                      <div className="flex items-center gap-5">
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-lg font-black ${
+                          i === 0 ? 'bg-green-500 text-black' : 'bg-white/[0.06] text-zinc-500'
+                        }`}>
+                          {i === 0 ? <Trophy size={20} /> : `L${i + 1}`}
+                        </div>
+                        <div>
+                          <p className="font-bold text-white">{bid.supplier?.email || `Supplier #${bid.supplierId}`}</p>
+                          <p className="text-[10px] text-zinc-600 uppercase font-bold tracking-widest mt-0.5">
+                            {new Date(bid.timestamp).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                      <p className={`text-2xl font-mono font-black ${i === 0 ? 'text-green-400' : 'text-white'}`}>
+                        ${bid.price.toFixed(2)}
+                      </p>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              )}
             </div>
           </div>
 
-          {/* Quick Stats Sidebar */}
+          {/* Sidebar Stats */}
           <div className="space-y-6">
-            <div className="premium-card p-6 space-y-6 bg-indigo-500/5 border-indigo-500/10">
-              <h4 className="text-sm font-bold uppercase tracking-widest text-indigo-400 border-b border-indigo-500/10 pb-4 flex items-center gap-2"><Zap size={16}/> Auction Meta</h4>
+            <div className="glass-card p-6 space-y-5">
+              <h4 className="text-xs font-bold uppercase tracking-widest text-indigo-400 flex items-center gap-2 pb-3 border-b border-white/[0.04]">
+                <Zap size={14} /> Auction Meta
+              </h4>
               <div className="space-y-4">
-                <div className="bg-[#141417] p-4 rounded-xl border border-[#1f2937]">
-                  <p className="text-xs text-gray-500 mb-1">Total Active Suppliers</p>
-                  <p className="text-2xl font-bold">{new Set(rfq.bids.map(b => b.supplier.email)).size}</p>
+                <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.04]">
+                  <p className="text-xs text-zinc-600 mb-1">Active Suppliers</p>
+                  <p className="text-2xl font-bold">{uniqueSuppliers}</p>
                 </div>
-                <div className="bg-[#141417] p-4 rounded-xl border border-[#1f2937]">
-                  <p className="text-xs text-gray-500 mb-1">Average Bid Price</p>
-                  <p className="text-2xl font-bold">
-                    {rfq.bids.length > 0 ? `$${(rfq.bids.reduce((a,b) => a + b.price, 0) / rfq.bids.length).toFixed(2)}` : '--'}
-                  </p>
+                <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.04]">
+                  <p className="text-xs text-zinc-600 mb-1">Average Bid</p>
+                  <p className="text-2xl font-bold font-mono">{avgPrice > 0 ? `$${avgPrice.toFixed(2)}` : '--'}</p>
+                </div>
+                <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.04]">
+                  <p className="text-xs text-zinc-600 mb-1">Extensions</p>
+                  <p className="text-2xl font-bold">{rfq.extensionLogs?.length || 0}</p>
                 </div>
               </div>
             </div>
           </div>
-
         </div>
+
       </div>
     </div>
   );
