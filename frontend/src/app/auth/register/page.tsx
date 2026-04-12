@@ -1,100 +1,155 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
+import { useAuth } from '../../../providers/auth-provider';
+import { ApiError } from '../../../lib/api-error';
+import { Mail, Lock, ArrowRight, Loader2, Building2, Truck } from 'lucide-react';
+
+const registerSchema = z.object({
+  email: z.string().email('Enter a valid email address'),
+  password: z.string().min(6, 'Minimum 6 characters'),
+  role: z.enum(['BUYER', 'SUPPLIER']),
+});
+
+type RegisterForm = z.infer<typeof registerSchema>;
 
 export default function RegisterPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'BUYER' | 'SUPPLIER'>('SUPPLIER');
+  const { register: authRegister } = useAuth();
   const [error, setError] = useState('');
-  const router = useRouter();
+  const [shaking, setShaking] = useState(false);
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    const res = await fetch('http://localhost:3000/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, role }),
-    });
+  const { register, handleSubmit, watch, setValue, formState: { errors, isSubmitting } } = useForm<RegisterForm>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: { role: 'SUPPLIER' },
+  });
 
-    if (res.ok) {
-      const data = await res.json();
-      localStorage.setItem('token', data.access_token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-      router.push(role === 'BUYER' ? '/buyer' : '/supplier');
-    } else {
-      setError('Registration failed');
+  const selectedRole = watch('role');
+
+  const onSubmit = async (data: RegisterForm) => {
+    try {
+      setError('');
+      await authRegister(data);
+    } catch (e) {
+      const err = e instanceof ApiError ? e.message : 'Registration failed. Please try again.';
+      setError(err);
+      setShaking(true);
+      setTimeout(() => setShaking(false), 500);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0a0a0b] px-4">
-      <div className="w-full max-w-md premium-card p-10 space-y-8">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold">Create Account</h1>
-          <p className="text-gray-400 mt-2">Join the British Auction network</p>
+    <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden" style={{ background: 'var(--bg-primary)' }}>
+      <div className="absolute top-1/3 -right-40 w-[500px] h-[500px] bg-purple-500/10 rounded-full blur-[140px] animate-float" />
+      <div className="absolute bottom-1/3 -left-40 w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-[140px] animate-float" style={{ animationDelay: '3s' }} />
+
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: 'easeOut' }}
+        className={`w-full max-w-md glass-card p-10 space-y-8 relative ${shaking ? 'animate-shake' : ''}`}
+      >
+        <div className="text-center space-y-2">
+          <h1 className="text-3xl font-bold tracking-tight">Create Account</h1>
+          <p className="text-zinc-500 text-sm">Join the British Auction network</p>
         </div>
 
         {error && (
-          <div className="bg-red-500/10 border border-red-500/50 text-red-500 p-3 rounded-lg text-sm text-center">
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            className="bg-red-500/10 border border-red-500/20 text-red-400 p-3.5 rounded-xl text-sm text-center font-medium"
+          >
             {error}
-          </div>
+          </motion.div>
         )}
 
-        <form onSubmit={handleRegister} className="space-y-6">
-          <div className="flex gap-4 p-1 bg-[#1e1e21] rounded-xl border border-[#2a2a2e]">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+          {/* Role Selector */}
+          <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
-              onClick={() => setRole('SUPPLIER')}
-              className={`flex-1 py-2.5 rounded-lg font-medium transition-all ${role === 'SUPPLIER' ? 'bg-indigo-500 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+              onClick={() => setValue('role', 'SUPPLIER')}
+              className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all duration-200 ${
+                selectedRole === 'SUPPLIER'
+                  ? 'border-indigo-500/50 bg-indigo-500/10 text-indigo-300 shadow-lg shadow-indigo-500/10'
+                  : 'border-white/[0.06] bg-white/[0.02] text-zinc-500 hover:text-zinc-300 hover:border-white/10'
+              }`}
             >
-              Supplier
+              <Truck size={22} />
+              <span className="text-sm font-semibold">Supplier</span>
             </button>
             <button
               type="button"
-              onClick={() => setRole('BUYER')}
-              className={`flex-1 py-2.5 rounded-lg font-medium transition-all ${role === 'BUYER' ? 'bg-indigo-500 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+              onClick={() => setValue('role', 'BUYER')}
+              className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all duration-200 ${
+                selectedRole === 'BUYER'
+                  ? 'border-indigo-500/50 bg-indigo-500/10 text-indigo-300 shadow-lg shadow-indigo-500/10'
+                  : 'border-white/[0.06] bg-white/[0.02] text-zinc-500 hover:text-zinc-300 hover:border-white/10'
+              }`}
             >
-              Buyer
+              <Building2 size={22} />
+              <span className="text-sm font-semibold">Buyer</span>
             </button>
           </div>
-          <div>
-            <label className="block text-sm font-medium mb-1.5 ml-1">Email Address</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-[#1e1e21] border border-[#2a2a2e] rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500 transition-colors"
-              placeholder="name@company.com"
-              required
-            />
+
+          <div className="space-y-1.5">
+            <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider ml-1">Email</label>
+            <div className="relative">
+              <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" />
+              <input
+                {...register('email')}
+                type="email"
+                className="input-field pl-11"
+                placeholder="name@company.com"
+                aria-invalid={!!errors.email}
+              />
+            </div>
+            {errors.email && <p className="text-red-400 text-xs ml-1 mt-1">{errors.email.message}</p>}
           </div>
-          <div>
-            <label className="block text-sm font-medium mb-1.5 ml-1">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-[#1e1e21] border border-[#2a2a2e] rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500 transition-colors"
-              placeholder="••••••••"
-              required
-            />
+
+          <div className="space-y-1.5">
+            <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider ml-1">Password</label>
+            <div className="relative">
+              <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" />
+              <input
+                {...register('password')}
+                type="password"
+                className="input-field pl-11"
+                placeholder="••••••••"
+                aria-invalid={!!errors.password}
+              />
+            </div>
+            {errors.password && <p className="text-red-400 text-xs ml-1 mt-1">{errors.password.message}</p>}
           </div>
-          <button type="submit" className="w-full btn-primary py-3.5 mt-2">
-            Create Account
+
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="w-full btn-primary py-3.5 mt-2 text-base"
+          >
+            {isSubmitting ? (
+              <Loader2 size={18} className="animate-spin" />
+            ) : (
+              <>
+                Create Account
+                <ArrowRight size={16} />
+              </>
+            )}
           </button>
         </form>
 
-        <p className="text-center text-sm text-gray-400">
+        <p className="text-center text-sm text-zinc-500">
           Already have an account?{' '}
-          <Link href="/auth/login" className="text-indigo-400 hover:underline">
-            Login
+          <Link href="/auth/login" className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors">
+            Sign in
           </Link>
         </p>
-      </div>
+      </motion.div>
     </div>
   );
 }
