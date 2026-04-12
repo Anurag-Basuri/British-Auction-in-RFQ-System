@@ -1,6 +1,7 @@
 import { prisma } from '../lib/prisma.js';
 import { scheduleClosure } from '../scheduler/queue.js';
 import type { CreateRfqDto } from '../schemas/rfq.schema.js';
+import { ApiError } from '../utils/ApiError.js';
 
 /**
  * Create a new RFQ auction and schedule its initial close job.
@@ -71,7 +72,7 @@ export async function findOne(id: number) {
   });
 
   if (!rfq) {
-    throw { status: 404, message: 'RFQ not found' };
+    throw new ApiError(404, 'RFQ not found');
   }
 
   return rfq;
