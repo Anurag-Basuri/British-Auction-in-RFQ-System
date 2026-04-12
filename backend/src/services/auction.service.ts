@@ -1,4 +1,5 @@
 import { prisma } from '../lib/prisma.js';
+import { ApiError } from '../utils/ApiError.js';
 
 /**
  * Evaluate whether a bid should trigger an auction time extension.
@@ -21,7 +22,7 @@ export async function evaluateExtension(
 
   // Reject bids outside the active window.
   if (bidTimestamp < rfq.start_time || bidTimestamp > rfq.close_time) {
-    throw { status: 400, message: 'Auction is not currently active' };
+    throw new ApiError(400, 'Auction is not currently active');
   }
 
   const triggerWindowMs = rfq.trigger_window_mins * 60 * 1000;

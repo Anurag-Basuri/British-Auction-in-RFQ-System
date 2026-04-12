@@ -1,6 +1,8 @@
 import jwt from 'jsonwebtoken';
 import { prisma } from '../lib/prisma.js';
 import type { RegisterDto, LoginDto } from '../schemas/auth.schema.js';
+import { ApiError } from '../utils/ApiError.js';
+import { env } from '../config/env.js';
 
 /**
  * Register a new user. Checks for duplicate email, creates user, returns JWT.
@@ -8,7 +10,7 @@ import type { RegisterDto, LoginDto } from '../schemas/auth.schema.js';
 export async function register(dto: RegisterDto) {
   const existing = await prisma.user.findUnique({ where: { email: dto.email } });
   if (existing) {
-    throw { status: 409, message: 'Email already in use' };
+    throw new ApiError(409, 'Email already in use');
   }
 
   const user = await prisma.user.create({
@@ -28,7 +30,7 @@ export async function register(dto: RegisterDto) {
 export async function login(dto: LoginDto) {
   const user = await prisma.user.findUnique({ where: { email: dto.email } });
   if (!user || user.password !== dto.password) {
-    throw { status: 401, message: 'Invalid credentials' };
+    throw new ApiError(401, 'Invalid credentials');
   }
 
   return generateToken(user);
