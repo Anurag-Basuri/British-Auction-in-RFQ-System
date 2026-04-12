@@ -1,18 +1,16 @@
-import { Redis, RedisOptions } from 'ioredis';
+import { Redis } from 'ioredis';
+import { env } from '../config/env.js';
 import { logger } from './logger.js';
 
-const redisOptions: RedisOptions = {
-  host: process.env.REDIS_HOST || 'localhost',
-  port: Number(process.env.REDIS_PORT) || 6379,
-  maxRetriesPerRequest: null,
-};
-
 /**
- * Creates a unique Redis connection for BullMQ with trapped error handlers.
+ * Creates a unique Redis connection for BullMQ using the Upstash TLS URL
  * This prevents ioredis from incessantly spamming unhandled network errors perfectly into the raw Node console.
  */
 export function createRedisConnection(clientName: string) {
-  const connection = new Redis(redisOptions);
+  // ioredis parses the full rediss:// url including username, password, host, port, and TLS rules natively
+  const connection = new Redis(env.REDIS_URL, {
+    maxRetriesPerRequest: null, // Required by BullMQ
+  });
 
   connection.on('error', (err: any) => {
     // Explicitly trap and silence background socket TCP errors. 
