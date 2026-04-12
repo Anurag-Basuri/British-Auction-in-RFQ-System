@@ -2,25 +2,31 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '../providers/auth-provider';
 
 export default function Home() {
   const router = useRouter();
+  const { isAuthenticated, user, isLoading } = useAuth();
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    if (!token) {
+    if (isLoading) return;
+    if (!isAuthenticated) {
       router.push('/auth/login');
     } else {
-      router.push(user.role === 'BUYER' ? '/buyer' : '/supplier');
+      router.push(user?.role === 'BUYER' ? '/buyer' : '/supplier');
     }
-  }, [router]);
+  }, [isAuthenticated, isLoading, user, router]);
 
   return (
-    <div className="min-h-screen bg-[#0a0a0b] flex items-center justify-center">
-      <div className="text-center space-y-4">
-        <h1 className="text-4xl font-bold text-white animate-pulse">Initializing Reverse Auction Platform...</h1>
-        <div className="w-16 h-1 w-full bg-indigo-500 rounded-full mx-auto animate-bounce opacity-20"></div>
+    <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-primary)' }}>
+      <div className="text-center space-y-6">
+        <div className="relative">
+          <div className="absolute inset-0 bg-indigo-500/20 rounded-full blur-3xl animate-glow" />
+          <h1 className="relative text-4xl font-bold text-white">
+            Initializing Platform...
+          </h1>
+        </div>
+        <div className="w-48 h-1 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full mx-auto opacity-60 animate-pulse" />
       </div>
     </div>
   );
