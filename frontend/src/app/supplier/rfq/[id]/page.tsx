@@ -261,7 +261,7 @@ export default function SupplierLiveAuction() {
 
           {/* Right: Leaderboard */}
           <div className="glass-card flex flex-col" style={{ height: '700px' }}>
-            <div className="p-6 border-b border-white/[0.04] flex justify-between items-center">
+            <div className="p-6 border-b border-white/4 flex justify-between items-center">
               <h3 className="text-lg font-bold flex items-center gap-2">
                 <TrendingDown size={16} className="text-indigo-400" /> Leaderboard
               </h3>
@@ -282,12 +282,12 @@ export default function SupplierLiveAuction() {
                         ? 'bg-green-500/10 border border-green-500/20'
                         : bid.supplierId === user?.id
                           ? 'bg-indigo-500/10 border border-indigo-500/20'
-                          : 'bg-white/[0.02] border border-white/[0.04]'
+                          : 'bg-white/2 border border-white/4'
                     }`}
                   >
                     <div className="flex items-center gap-4">
                       <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm ${
-                        i === 0 ? 'bg-green-500 text-black' : 'bg-white/[0.06] text-zinc-500'
+                        i === 0 ? 'bg-green-500 text-black' : 'bg-white/6 text-zinc-500'
                       }`}>
                         {i === 0 ? <Trophy size={16} /> : `L${i + 1}`}
                       </div>

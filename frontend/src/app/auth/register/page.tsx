@@ -77,7 +77,7 @@ export default function RegisterPage() {
               className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all duration-200 ${
                 selectedRole === 'SUPPLIER'
                   ? 'border-indigo-500/50 bg-indigo-500/10 text-indigo-300 shadow-lg shadow-indigo-500/10'
-                  : 'border-white/[0.06] bg-white/[0.02] text-zinc-500 hover:text-zinc-300 hover:border-white/10'
+                  : 'border-white/6 bg-white/2 text-zinc-500 hover:text-zinc-300 hover:border-white/10'
               }`}
             >
               <Truck size={22} />
@@ -89,7 +89,7 @@ export default function RegisterPage() {
               className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all duration-200 ${
                 selectedRole === 'BUYER'
                   ? 'border-indigo-500/50 bg-indigo-500/10 text-indigo-300 shadow-lg shadow-indigo-500/10'
-                  : 'border-white/[0.06] bg-white/[0.02] text-zinc-500 hover:text-zinc-300 hover:border-white/10'
+                  : 'border-white/6 bg-white/2 text-zinc-500 hover:text-zinc-300 hover:border-white/10'
               }`}
             >
               <Building2 size={22} />

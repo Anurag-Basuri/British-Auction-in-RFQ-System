@@ -166,7 +166,7 @@ export default function BuyerLiveAuction() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Leaderboard */}
           <div className="lg:col-span-3 glass-card overflow-hidden flex flex-col" style={{ height: '600px' }}>
-            <div className="p-6 border-b border-white/[0.04] flex justify-between items-center">
+            <div className="p-6 border-b border-white/4 flex justify-between items-center">
               <h3 className="text-lg font-bold flex items-center gap-2">
                 <Target size={18} className="text-indigo-400" /> Real-time Supplier Ranking
               </h3>
@@ -191,12 +191,12 @@ export default function BuyerLiveAuction() {
                       className={`p-5 rounded-2xl flex justify-between items-center ${
                         i === 0
                           ? 'bg-green-500/10 border border-green-500/20 shadow-lg shadow-green-500/5'
-                          : 'bg-white/[0.02] border border-white/[0.04]'
+                          : 'bg-white/2 border border-white/4'
                       }`}
                     >
                       <div className="flex items-center gap-5">
                         <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-lg font-black ${
-                          i === 0 ? 'bg-green-500 text-black' : 'bg-white/[0.06] text-zinc-500'
+                          i === 0 ? 'bg-green-500 text-black' : 'bg-white/6 text-zinc-500'
                         }`}>
                           {i === 0 ? <Trophy size={20} /> : `L${i + 1}`}
                         </div>
@@ -220,19 +220,19 @@ export default function BuyerLiveAuction() {
           {/* Sidebar Stats */}
           <div className="space-y-6">
             <div className="glass-card p-6 space-y-5">
-              <h4 className="text-xs font-bold uppercase tracking-widest text-indigo-400 flex items-center gap-2 pb-3 border-b border-white/[0.04]">
+              <h4 className="text-xs font-bold uppercase tracking-widest text-indigo-400 flex items-center gap-2 pb-3 border-b border-white/4">
                 <Zap size={14} /> Auction Meta
               </h4>
               <div className="space-y-4">
-                <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.04]">
+                <div className="p-4 rounded-xl bg-white/2 border border-white/4">
                   <p className="text-xs text-zinc-600 mb-1">Active Suppliers</p>
                   <p className="text-2xl font-bold">{uniqueSuppliers}</p>
                 </div>
-                <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.04]">
+                <div className="p-4 rounded-xl bg-white/2 border border-white/4">
                   <p className="text-xs text-zinc-600 mb-1">Average Bid</p>
                   <p className="text-2xl font-bold font-mono">{avgPrice > 0 ? `$${avgPrice.toFixed(2)}` : '--'}</p>
                 </div>
-                <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.04]">
+                <div className="p-4 rounded-xl bg-white/2 border border-white/4">
                   <p className="text-xs text-zinc-600 mb-1">Extensions</p>
                   <p className="text-2xl font-bold">{rfq.extensionLogs?.length || 0}</p>
                 </div>

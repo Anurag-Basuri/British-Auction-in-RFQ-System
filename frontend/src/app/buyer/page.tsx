@@ -28,7 +28,7 @@ function SkeletonCard() {
         <div className="skeleton w-3/4 h-6 rounded-lg" />
         <div className="skeleton w-1/2 h-4 rounded-lg" />
       </div>
-      <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/[0.04]">
+      <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/4">
         <div className="skeleton w-full h-4 rounded" />
         <div className="skeleton w-full h-4 rounded" />
       </div>
@@ -104,7 +104,7 @@ export default function BuyerDashboard() {
                       <h3 className="text-lg font-bold line-clamp-2 group-hover:text-indigo-300 transition-colors">{rfq.title}</h3>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 border-t border-white/[0.04] pt-4">
+                    <div className="grid grid-cols-2 gap-4 border-t border-white/4 pt-4">
                       <div className="flex items-center gap-2 text-sm text-zinc-500">
                         <Clock size={14} />
                         <span>{new Date(rfq.close_time).toLocaleDateString()}</span>

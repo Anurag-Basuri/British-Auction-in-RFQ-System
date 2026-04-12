@@ -18,7 +18,7 @@ export default function Header() {
         <div className="p-1.5 rounded-lg bg-indigo-500/10 group-hover:bg-indigo-500/20 transition-colors">
           <Gavel size={18} className="text-indigo-400" />
         </div>
-        <span className="text-lg font-bold tracking-tight bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
+        <span className="text-lg font-bold tracking-tight bg-linear-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
           BritishAuction
         </span>
       </Link>
@@ -33,7 +33,7 @@ export default function Header() {
 
           <div className="w-px h-5 bg-white/10 mx-2" />
 
-          <div className="flex items-center gap-3 px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06]">
+          <div className="flex items-center gap-3 px-3 py-1.5 rounded-lg bg-white/3 border border-white/6">
             <div className="w-7 h-7 rounded-full bg-indigo-500/20 flex items-center justify-center">
               <User size={14} className="text-indigo-400" />
             </div>

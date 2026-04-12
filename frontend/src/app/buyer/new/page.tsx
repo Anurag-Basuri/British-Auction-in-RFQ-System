@@ -87,7 +87,7 @@ export default function CreateRfq() {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-10">
           {/* General Details */}
           <section className="space-y-5">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-2 border-b border-white/[0.04] pb-3">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-2 border-b border-white/4 pb-3">
               <Settings2 size={16} /> General Details
             </h3>
             <div className="space-y-4">
@@ -105,7 +105,7 @@ export default function CreateRfq() {
 
           {/* Timeline */}
           <section className="space-y-5">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-2 border-b border-white/[0.04] pb-3">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-2 border-b border-white/4 pb-3">
               <Clock size={16} /> Timeline
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -129,7 +129,7 @@ export default function CreateRfq() {
 
           {/* Auction Dynamics */}
           <section className="space-y-5">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-2 border-b border-white/[0.04] pb-3">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-2 border-b border-white/4 pb-3">
               <Zap size={16} /> Auction Dynamics
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -151,7 +151,7 @@ export default function CreateRfq() {
                 {triggerOptions.map(opt => (
                   <label key={opt.value} className="cursor-pointer">
                     <input type="radio" {...register('trigger_type')} value={opt.value} className="peer hidden" />
-                    <div className="p-4 rounded-xl border border-white/[0.06] bg-white/[0.02] peer-checked:border-indigo-500/50 peer-checked:bg-indigo-500/10 transition-all duration-200">
+                    <div className="p-4 rounded-xl border border-white/6 bg-white/2 peer-checked:border-indigo-500/50 peer-checked:bg-indigo-500/10 transition-all duration-200">
                       <p className="font-semibold text-sm peer-checked:text-indigo-300">{opt.label}</p>
                       <p className="text-xs text-zinc-600 mt-1">{opt.description}</p>
                     </div>
@@ -161,7 +161,7 @@ export default function CreateRfq() {
             </div>
           </section>
 
-          <div className="flex justify-end gap-4 pt-4 border-t border-white/[0.04]">
+          <div className="flex justify-end gap-4 pt-4 border-t border-white/4">
             <button type="button" onClick={() => router.back()} className="btn-ghost">
               Cancel
             </button>

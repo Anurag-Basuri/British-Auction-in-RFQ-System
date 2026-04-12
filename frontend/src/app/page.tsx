@@ -26,7 +26,7 @@ export default function Home() {
             Initializing Platform...
           </h1>
         </div>
-        <div className="w-48 h-1 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full mx-auto opacity-60 animate-pulse" />
+        <div className="w-48 h-1 bg-linear-to-r from-indigo-500 to-purple-500 rounded-full mx-auto opacity-60 animate-pulse" />
       </div>
     </div>
   );
