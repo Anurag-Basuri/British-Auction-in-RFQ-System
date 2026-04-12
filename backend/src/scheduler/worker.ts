@@ -2,13 +2,16 @@ import { Worker } from 'bullmq';
 import { redisConnectionOptions } from '../lib/redis.js';
 import { prisma } from '../lib/prisma.js';
 import { broadcastToRfq } from '../lib/socket.js';
+import { logger } from '../lib/logger.js';
+
+let activeWorker: Worker | null = null;
 
 /**
  * Start the BullMQ worker that processes auction closure jobs.
  * Replaces the NestJS AuctionProcessor (@Processor decorator + WorkerHost).
  */
 export function startWorker() {
-  const worker = new Worker(
+  activeWorker = new Worker(
     'auction',
     async (job) => {
       const { rfqId } = job.data;
@@ -32,17 +35,24 @@ export function startWorker() {
     { connection: redisConnectionOptions }
   );
 
-  worker.on('failed', (job, err) => {
-    console.error(`Auction closure job ${job?.id} failed:`, err.message);
+  activeWorker.on('failed', (job, err) => {
+    logger.error({ jobId: job?.id, error: err.message }, 'Auction closure job failed');
   });
 
-  worker.on('error', (err) => {
+  activeWorker.on('error', (err) => {
     // Silently handle Redis connection errors —
     // BullMQ will auto-reconnect when Redis becomes available.
     if (!err.message.includes('ECONNREFUSED') && !err.message.includes('Connection is closed')) {
-      console.error('Worker error:', err.message);
+      logger.error({ error: err.message }, 'Worker processing error');
     }
   });
 
-  console.log('Auction worker started');
+  logger.info('Auction background worker initialized');
+}
+
+/**
+ * Get active BullMQ worker used for graceful shutdowns
+ */
+export function getWorker() {
+  return activeWorker;
 }

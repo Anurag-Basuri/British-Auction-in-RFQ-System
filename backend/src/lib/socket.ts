@@ -1,7 +1,7 @@
 import { Server as SocketServer } from 'socket.io';
 import type { Server } from 'http';
 
-let io: SocketServer;
+let io: SocketServer | null = null;
 
 /**
  * Initialize the Socket.IO server and attach it to the HTTP server.
@@ -20,8 +20,15 @@ export function initSocketServer(httpServer: Server) {
 }
 
 /**
+ * Get the active Socket.IO server instance
+ */
+export function getSocketServer() {
+  return io;
+}
+
+/**
  * Broadcast an event to all clients subscribed to a specific RFQ room.
  */
 export function broadcastToRfq(rfqId: number, event: string, payload: any) {
-  io.to(`rfq-${rfqId}`).emit(event, payload);
+  if (io) io.to(`rfq-${rfqId}`).emit(event, payload);
 }
