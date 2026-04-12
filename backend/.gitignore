@@ -1,0 +1,25 @@
+node_modules
+dist
+.env
+.env.local
+.env.test
+
+./backend/node_modules
+./backend/dist
+./client/node_modules
+./client/dist
+./backend/.env
+./client/.env
+
+# IDE
+.vscode
+.idea
+*.swp
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Prisma
+# Note: we ignore temporary generated sqlite files normally, but strictly ignoring env is key.
