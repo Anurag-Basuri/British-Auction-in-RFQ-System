@@ -1,5 +1,5 @@
-import { Request, Response, NextFunction } from 'express';
-import { ZodSchema } from 'zod';
+import { Request, Response, NextFunction } from "express";
+import { ZodSchema } from "zod";
 
 /**
  * Factory function that returns an Express middleware for validating
@@ -11,7 +11,7 @@ export function validate(schema: ZodSchema) {
     const result = schema.safeParse(req.body);
     if (!result.success) {
       res.status(400).json({
-        message: 'Validation failed',
+        message: "Validation failed",
         errors: result.error.flatten().fieldErrors,
       });
       return;

@@ -7,7 +7,7 @@ export class ApiError extends Error {
     statusCode: number,
     message: string = "Something went wrong",
     errors: any[] = [],
-    stack: string = ""
+    stack: string = "",
   ) {
     super(message);
     this.statusCode = statusCode;
