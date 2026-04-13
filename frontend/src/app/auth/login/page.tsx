@@ -170,10 +170,8 @@ export default function LoginPage() {
               }
             }}
             onError={() => setError("Google OAuth initialization failed.")}
-            useOneTap
             theme="filled_black"
             shape="pill"
-            width="100%"
           />
         </div>
 
