@@ -73,7 +73,11 @@ export async function googleLogin(dto: GoogleAuthDto) {
       }
       email = payload.email;
     } catch (err: any) {
-      throw new ApiError(401, "Google authentication failed: " + err.message);
+      console.error("[Google Auth Error]:", err.message);
+      throw new ApiError(
+        401,
+        "We could not verify your Google account. Please try again.",
+      );
     }
   }
 
