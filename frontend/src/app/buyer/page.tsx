@@ -1,12 +1,18 @@
-'use client';
+"use client";
 
-import { useQuery } from '@tanstack/react-query';
-import { rfqService } from '../../services/rfq.service';
-import Header from '../header';
-import { PlusCircle, Clock, TrendingDown, FileText, Loader2 } from 'lucide-react';
-import Link from 'next/link';
-import { motion } from 'framer-motion';
-import type { RFQ } from '../../types/api';
+import { useQuery } from "@tanstack/react-query";
+import { rfqService } from "../../services/rfq.service";
+import Header from "../header";
+import {
+  PlusCircle,
+  Clock,
+  TrendingDown,
+  FileText,
+  Loader2,
+} from "lucide-react";
+import Link from "next/link";
+import { motion } from "framer-motion";
+import type { RFQ } from "../../types/api";
 
 const cardVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -37,14 +43,21 @@ function SkeletonCard() {
 }
 
 export default function BuyerDashboard() {
-  const { data: rfqs = [], isLoading, error } = useQuery<RFQ[]>({
-    queryKey: ['rfqs'],
+  const {
+    data: rfqs = [],
+    isLoading,
+    error,
+  } = useQuery<RFQ[]>({
+    queryKey: ["rfqs"],
     queryFn: rfqService.getAllRfqs,
     refetchInterval: 30000,
   });
 
   return (
-    <div className="min-h-screen pt-24 pb-12 px-8" style={{ background: 'var(--bg-primary)' }}>
+    <div
+      className="min-h-screen pt-24 pb-12 px-8"
+      style={{ background: "var(--bg-primary)" }}
+    >
       <Header />
 
       <div className="max-w-7xl mx-auto space-y-10">
@@ -55,10 +68,18 @@ export default function BuyerDashboard() {
             transition={{ duration: 0.4 }}
             className="space-y-2"
           >
-            <h2 className="text-4xl font-bold tracking-tight">Buyer Command Center</h2>
-            <p className="text-zinc-500">Manage and monitor your active reverse auctions</p>
+            <h2 className="text-4xl font-bold tracking-tight">
+              Buyer Command Center
+            </h2>
+            <p className="text-zinc-500">
+              Manage and monitor your active reverse auctions
+            </p>
           </motion.div>
-          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4, delay: 0.1 }}>
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.4, delay: 0.1 }}
+          >
             <Link href="/buyer/new" className="btn-primary px-6 py-3.5">
               <PlusCircle size={18} />
               <span>Create New RFQ</span>
@@ -68,7 +89,9 @@ export default function BuyerDashboard() {
 
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3].map(i => <SkeletonCard key={i} />)}
+            {[1, 2, 3].map((i) => (
+              <SkeletonCard key={i} />
+            ))}
           </div>
         ) : error ? (
           <div className="glass-card p-12 text-center space-y-4">
@@ -79,12 +102,20 @@ export default function BuyerDashboard() {
           <div className="glass-card p-16 text-center space-y-4">
             <FileText size={48} className="text-zinc-700 mx-auto" />
             <p className="text-zinc-400 font-medium text-lg">No auctions yet</p>
-            <p className="text-zinc-600 text-sm">Create your first reverse auction to get started.</p>
+            <p className="text-zinc-600 text-sm">
+              Create your first reverse auction to get started.
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {rfqs.map((rfq, i) => (
-              <motion.div key={rfq.id} custom={i} initial="hidden" animate="visible" variants={cardVariants}>
+              <motion.div
+                key={rfq.id}
+                custom={i}
+                initial="hidden"
+                animate="visible"
+                variants={cardVariants}
+              >
                 <Link href={`/buyer/rfq/${rfq.id}`} className="group block">
                   <div className="glass-card p-6 h-64 flex flex-col justify-between group-hover:border-indigo-500/30 transition-all duration-300 group-hover:-translate-y-1">
                     <div className="space-y-4">
@@ -92,22 +123,32 @@ export default function BuyerDashboard() {
                         <div className="p-2.5 bg-indigo-500/10 rounded-xl text-indigo-400 group-hover:bg-indigo-500/20 transition-colors">
                           <FileText size={20} />
                         </div>
-                        <span className={`badge ${
-                          rfq.status === 'ACTIVE' ? 'badge-active' :
-                          rfq.status === 'CLOSED' ? 'badge-closed' :
-                          'bg-zinc-500/10 text-zinc-500 border border-zinc-500/20'
-                        }`}>
-                          {rfq.status === 'ACTIVE' && <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />}
+                        <span
+                          className={`badge ${
+                            rfq.status === "ACTIVE"
+                              ? "badge-active"
+                              : rfq.status === "CLOSED"
+                                ? "badge-closed"
+                                : "bg-zinc-500/10 text-zinc-500 border border-zinc-500/20"
+                          }`}
+                        >
+                          {rfq.status === "ACTIVE" && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                          )}
                           {rfq.status}
                         </span>
                       </div>
-                      <h3 className="text-lg font-bold line-clamp-2 group-hover:text-indigo-300 transition-colors">{rfq.title}</h3>
+                      <h3 className="text-lg font-bold line-clamp-2 group-hover:text-indigo-300 transition-colors">
+                        {rfq.title}
+                      </h3>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4 border-t border-white/4 pt-4">
                       <div className="flex items-center gap-2 text-sm text-zinc-500">
                         <Clock size={14} />
-                        <span>{new Date(rfq.close_time).toLocaleDateString()}</span>
+                        <span>
+                          {new Date(rfq.close_time).toLocaleDateString()}
+                        </span>
                       </div>
                       <div className="flex items-center gap-2 text-sm text-zinc-500">
                         <TrendingDown size={14} />

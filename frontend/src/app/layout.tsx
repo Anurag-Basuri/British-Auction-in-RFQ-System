@@ -4,6 +4,8 @@ import "./globals.css";
 import { QueryProvider } from "../providers/query-provider";
 import { AuthProvider } from "../providers/auth-provider";
 
+import { GoogleOAuthProvider } from "@react-oauth/google";
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -30,11 +32,15 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <QueryProvider>
-          <AuthProvider>
-            {children}
-          </AuthProvider>
-        </QueryProvider>
+        <GoogleOAuthProvider
+          clientId={
+            process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "mock_client_id"
+          }
+        >
+          <QueryProvider>
+            <AuthProvider>{children}</AuthProvider>
+          </QueryProvider>
+        </GoogleOAuthProvider>
       </body>
     </html>
   );
