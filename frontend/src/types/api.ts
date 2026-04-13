@@ -9,21 +9,21 @@ export interface ApiResponse<T> {
 export interface User {
   id: number;
   email: string;
-  role: 'BUYER' | 'SUPPLIER';
+  role: "BUYER" | "SUPPLIER";
 }
 
 export interface RFQ {
   id: number;
   title: string;
   description: string | null;
-  status: 'DRAFT' | 'ACTIVE' | 'CLOSED';
+  status: "DRAFT" | "ACTIVE" | "CLOSED";
   start_time: string;
   close_time: string;
   forced_close_time: string;
   pickup_date: string | null;
   trigger_window_mins: number;
   extension_mins: number;
-  trigger_type: 'ANY_BID' | 'RANK_CHANGE' | 'L1_CHANGE';
+  trigger_type: "ANY_BID" | "RANK_CHANGE" | "L1_CHANGE";
   buyerId: number;
   createdAt: string;
   updatedAt: string;
@@ -83,7 +83,7 @@ export interface CreateRfqDto {
   pickup_date?: string;
   trigger_window_mins: number;
   extension_mins: number;
-  trigger_type: 'ANY_BID' | 'RANK_CHANGE' | 'L1_CHANGE';
+  trigger_type: "ANY_BID" | "RANK_CHANGE" | "L1_CHANGE";
 }
 
 export interface CreateBidDto {
@@ -106,8 +106,13 @@ export interface LoginDto {
   password?: string;
 }
 
+export interface GoogleAuthDto {
+  token: string;
+  role?: "BUYER" | "SUPPLIER";
+}
+
 export interface RegisterDto {
   email: string;
   password?: string;
-  role: 'BUYER' | 'SUPPLIER';
+  role: "BUYER" | "SUPPLIER";
 }
