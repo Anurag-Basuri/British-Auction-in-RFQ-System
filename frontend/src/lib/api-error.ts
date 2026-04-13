@@ -1,4 +1,4 @@
-import { AxiosError } from 'axios';
+import { AxiosError } from "axios";
 
 export class ApiError extends Error {
   public statusCode: number;
@@ -7,7 +7,7 @@ export class ApiError extends Error {
 
   constructor(message: string, statusCode: number, errors?: any) {
     super(message);
-    this.name = 'ApiError';
+    this.name = "ApiError";
     this.statusCode = statusCode;
     this.errors = errors;
     this.success = false;
@@ -23,7 +23,8 @@ export class ApiError extends Error {
 
     if (error instanceof AxiosError) {
       const respData = error.response?.data as any;
-      const message = respData?.message || error.message || 'An unexpected error occurred';
+      const message =
+        respData?.message || error.message || "An unexpected error occurred";
       const statusCode = error.response?.status || 500;
       const errors = respData?.errors;
 
@@ -34,7 +35,7 @@ export class ApiError extends Error {
       return new ApiError(error.message, 500);
     }
 
-    return new ApiError('An unknown error occurred', 500);
+    return new ApiError("An unknown error occurred", 500);
   }
 
   get isUnauthorized() {

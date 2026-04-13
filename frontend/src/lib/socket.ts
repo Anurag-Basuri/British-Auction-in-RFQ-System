@@ -1,11 +1,11 @@
-import { io, Socket } from 'socket.io-client';
+import { io, Socket } from "socket.io-client";
 
 class SocketClient {
   private socket: Socket | null = null;
   private wsUrl: string;
 
   constructor() {
-    this.wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:3000';
+    this.wsUrl = process.env.NEXT_PUBLIC_WS_URL || "http://localhost:3000";
   }
 
   public connect() {
@@ -13,8 +13,8 @@ class SocketClient {
 
     // Use token if available
     let token = null;
-    if (typeof window !== 'undefined') {
-      token = localStorage.getItem('token');
+    if (typeof window !== "undefined") {
+      token = localStorage.getItem("token");
     }
 
     this.socket = io(this.wsUrl, {
@@ -22,16 +22,16 @@ class SocketClient {
       reconnectionDelayMax: 10000,
     });
 
-    this.socket.on('connect', () => {
-      console.log('🔗 Real-time WebSocket connected');
+    this.socket.on("connect", () => {
+      console.log("🔗 Real-time WebSocket connected");
     });
 
-    this.socket.on('disconnect', () => {
-      console.log('🔴 WebSocket disconnected');
+    this.socket.on("disconnect", () => {
+      console.log("🔴 WebSocket disconnected");
     });
 
-    this.socket.on('connect_error', (err) => {
-      console.error('Socket connection error:', err.message);
+    this.socket.on("connect_error", (err) => {
+      console.error("Socket connection error:", err.message);
     });
 
     return this.socket;
@@ -50,11 +50,11 @@ class SocketClient {
 
   // Domain-specific helpers
   public joinRfqRoom(rfqId: number) {
-    this.socket?.emit('join_rfq', rfqId);
+    this.socket?.emit("join_rfq", rfqId);
   }
 
   public leaveRfqRoom(rfqId: number) {
-    this.socket?.emit('leave_rfq', rfqId);
+    this.socket?.emit("leave_rfq", rfqId);
   }
 }
 

@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { AUTH_EXPIRED_EVENT } from '../lib/api-client';
-import type { User, LoginDto, RegisterDto } from '../types/api';
-import { authService } from '../services/auth.service';
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { AUTH_EXPIRED_EVENT } from "../lib/api-client";
+import type { User, LoginDto, RegisterDto } from "../types/api";
+import { authService } from "../services/auth.service";
 
 interface AuthContextType {
   user: User | null;
@@ -13,6 +13,10 @@ interface AuthContextType {
   isLoading: boolean;
   login: (data: LoginDto) => Promise<void>;
   register: (data: RegisterDto) => Promise<void>;
+  loginWithGoogle: (data: {
+    token: string;
+    role?: "BUYER" | "SUPPLIER";
+  }) => Promise<void>;
   logout: () => void;
 }
 
@@ -27,17 +31,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Initialize from LocalStorage
   useEffect(() => {
     try {
-      const storedToken = localStorage.getItem('token');
-      const storedUser = localStorage.getItem('user');
+      const storedToken = localStorage.getItem("token");
+      const storedUser = localStorage.getItem("user");
 
       if (storedToken && storedUser) {
         setToken(storedToken);
         setUser(JSON.parse(storedUser));
       }
     } catch (e) {
-      console.error('Failed to parse auth state from storage', e);
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
+      console.error("Failed to parse auth state from storage", e);
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
     } finally {
       setIsLoading(false);
     }
@@ -50,37 +54,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     window.addEventListener(AUTH_EXPIRED_EVENT, handleAuthExpired);
-    return () => window.removeEventListener(AUTH_EXPIRED_EVENT, handleAuthExpired);
+    return () =>
+      window.removeEventListener(AUTH_EXPIRED_EVENT, handleAuthExpired);
   }, []);
 
   const login = async (data: LoginDto) => {
     const res = await authService.login(data);
     setToken(res.access_token);
     setUser(res.user);
-    localStorage.setItem('token', res.access_token);
-    localStorage.setItem('user', JSON.stringify(res.user));
-    
+    localStorage.setItem("token", res.access_token);
+    localStorage.setItem("user", JSON.stringify(res.user));
+
     // Auto-redirect based on role
-    router.push(res.user.role === 'BUYER' ? '/buyer' : '/supplier');
+    router.push(res.user.role === "BUYER" ? "/buyer" : "/supplier");
   };
 
   const register = async (data: RegisterDto) => {
     const res = await authService.register(data);
     setToken(res.access_token);
     setUser(res.user);
-    localStorage.setItem('token', res.access_token);
-    localStorage.setItem('user', JSON.stringify(res.user));
-    
+    localStorage.setItem("token", res.access_token);
+    localStorage.setItem("user", JSON.stringify(res.user));
+
     // Auto-redirect based on role
-    router.push(res.user.role === 'BUYER' ? '/buyer' : '/supplier');
+    router.push(res.user.role === "BUYER" ? "/buyer" : "/supplier");
+  };
+
+  const loginWithGoogle = async (data: {
+    token: string;
+    role?: "BUYER" | "SUPPLIER";
+  }) => {
+    const res = await authService.googleLogin(data);
+    setToken(res.access_token);
+    setUser(res.user);
+    localStorage.setItem("token", res.access_token);
+    localStorage.setItem("user", JSON.stringify(res.user));
+
+    // Auto-redirect based on role
+    router.push(res.user.role === "BUYER" ? "/buyer" : "/supplier");
   };
 
   const logout = () => {
     setToken(null);
     setUser(null);
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    router.push('/auth/login');
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    router.push("/auth/login");
   };
 
   return (
@@ -92,6 +111,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         login,
         register,
+        loginWithGoogle,
         logout,
       }}
     >
@@ -103,7 +123,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }

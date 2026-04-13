@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useState } from 'react';
-import { ApiError } from '../lib/api-error';
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useState } from "react";
+import { ApiError } from "../lib/api-error";
 
 export function QueryProvider({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -14,19 +14,20 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
             staleTime: 30 * 1000,
             retry: (failureCount, error) => {
               // Don't retry validation or auth errors natively
-              if (error instanceof ApiError && (error.isUnauthorized || error.isValidation)) {
+              if (
+                error instanceof ApiError &&
+                (error.isUnauthorized || error.isValidation)
+              ) {
                 return false;
               }
               return failureCount < 2;
             },
           },
         },
-      })
+      }),
   );
 
   return (
-    <QueryClientProvider client={queryClient}>
-      {children}
-    </QueryClientProvider>
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
 }
