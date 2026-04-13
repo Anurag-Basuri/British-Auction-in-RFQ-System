@@ -1,12 +1,14 @@
-import { Queue } from 'bullmq';
-import { createRedisConnection } from '../lib/redis.js';
-import { logger } from '../lib/logger.js';
+import { Queue } from "bullmq";
+import { createRedisConnection } from "../lib/redis.js";
+import { logger } from "../lib/logger.js";
 
 let auctionQueue: Queue | null = null;
 
 export function initQueue() {
-  auctionQueue = new Queue('auction', { connection: createRedisConnection('queue') });
-  logger.info('Auction Queue engine initialized natively.');
+  auctionQueue = new Queue("auction", {
+    connection: createRedisConnection("queue"),
+  });
+  logger.info("Auction Queue engine initialized natively.");
 }
 
 /**
@@ -16,10 +18,10 @@ export function initQueue() {
  */
 export async function scheduleClosure(rfqId: number, closeTime: Date) {
   if (!auctionQueue) {
-    logger.warn('Redis queue offline natively. Skipping scheduling.');
+    logger.warn("Redis queue offline natively. Skipping scheduling.");
     return;
   }
-  
+
   const delay = closeTime.getTime() - Date.now();
   const queueJobId = `rfq_${rfqId}`;
 
@@ -28,11 +30,11 @@ export async function scheduleClosure(rfqId: number, closeTime: Date) {
 
   // Schedule new closure job.
   await auctionQueue.add(
-    'close-auction',
+    "close-auction",
     { rfqId },
     {
       jobId: queueJobId,
       delay: delay > 0 ? delay : 0,
-    }
+    },
   );
 }
