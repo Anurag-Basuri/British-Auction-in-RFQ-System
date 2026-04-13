@@ -1,5 +1,5 @@
-import { z } from 'zod';
-import 'dotenv/config';
+import { z } from "zod";
+import "dotenv/config";
 
 // Define the absolute minimum environment requirement for backend execution
 const envSchema = z.object({
@@ -8,13 +8,18 @@ const envSchema = z.object({
   REDIS_URL: z.string().url(), // Allows rediss:// URLs with passwords
   JWT_SECRET: z.string().min(16),
   PORT: z.coerce.number().default(3000),
-  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  NODE_ENV: z
+    .enum(["development", "production", "test"])
+    .default("development"),
 });
 
 const _env = envSchema.safeParse(process.env);
 
 if (!_env.success) {
-  console.error("❌ Invalid environment variables:", JSON.stringify(_env.error.format(), null, 2));
+  console.error(
+    "❌ Invalid environment variables:",
+    JSON.stringify(_env.error.format(), null, 2),
+  );
   process.exit(1);
 }
 
