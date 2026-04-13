@@ -1,5 +1,5 @@
-import { Server as SocketServer } from 'socket.io';
-import type { Server } from 'http';
+import { Server as SocketServer } from "socket.io";
+import type { Server } from "http";
 
 let io: SocketServer | null = null;
 
@@ -9,11 +9,11 @@ let io: SocketServer | null = null;
  */
 export function initSocketServer(httpServer: Server) {
   io = new SocketServer(httpServer, {
-    cors: { origin: '*' },
+    cors: { origin: "*" },
   });
 
-  io.on('connection', (socket) => {
-    socket.on('join-rfq', (rfqId: number) => {
+  io.on("connection", (socket) => {
+    socket.on("join-rfq", (rfqId: number) => {
       socket.join(`rfq-${rfqId}`);
     });
   });

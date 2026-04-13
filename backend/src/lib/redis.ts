@@ -1,6 +1,6 @@
-import { Redis } from 'ioredis';
-import { env } from '../config/env.js';
-import { logger } from './logger.js';
+import { Redis } from "ioredis";
+import { env } from "../config/env.js";
+import { logger } from "./logger.js";
 
 /**
  * Creates a unique Redis connection for BullMQ using the Upstash TLS URL
@@ -12,8 +12,8 @@ export function createRedisConnection(clientName: string) {
     maxRetriesPerRequest: null, // Required by BullMQ
   });
 
-  connection.on('error', (err: any) => {
-    // Explicitly trap and silence background socket TCP errors. 
+  connection.on("error", (err: any) => {
+    // Explicitly trap and silence background socket TCP errors.
     // They don't need to be repeatedly printed; the application health logs will reflect the status natively.
   });
 
