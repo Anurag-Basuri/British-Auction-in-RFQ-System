@@ -13,4 +13,8 @@ export const rfqService = {
   createRfq: async (data: CreateRfqDto): Promise<RFQ> => {
     return apiClient.post("/rfq", data);
   },
+
+  earlyCloseRfq: async (id: number): Promise<void> => {
+    return apiClient.post(`/rfq/${id}/close-early`);
+  },
 };

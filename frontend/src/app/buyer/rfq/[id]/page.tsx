@@ -42,9 +42,7 @@ function useCountdown(closeTime: string | undefined) {
         const mins = Math.floor((diff % 3600000) / 60000);
         const secs = Math.floor((diff % 60000) / 1000);
         setTimeLeft(
-          [hrs, mins, secs]
-            .map((v) => (v < 10 ? "0" + v : v))
-            .join(":")
+          [hrs, mins, secs].map((v) => (v < 10 ? "0" + v : v)).join(":"),
         );
         setIsUrgent(diff < 120000); // under 2 mins
       }
@@ -112,27 +110,43 @@ export default function BuyerLiveAuction() {
       <div className="min-h-screen flex items-center justify-center bg-[#05050A]">
         <div className="flex flex-col items-center gap-4">
           <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs animate-pulse">Syncing Telemetry...</p>
+          <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs animate-pulse">
+            Syncing Telemetry...
+          </p>
         </div>
       </div>
     );
   }
 
   const sortedBids = [...rfq.bids].sort((a, b) => a.price - b.price);
-  const l1Price = sortedBids[0]?.price;
-  const uniqueSuppliers = new Set(rfq.bids.map((b) => b.supplierId)).size;
+
+  // Unique leaderboard: only the best (lowest) bid per supplier
+  const leaderboard = (() => {
+    const best = new Map<number, (typeof sortedBids)[0]>();
+    for (const bid of sortedBids) {
+      if (!best.has(bid.supplierId)) {
+        best.set(bid.supplierId, bid); // first hit is already lowest since sorted
+      }
+    }
+    return Array.from(best.values());
+  })();
+
+  const l1Price = leaderboard[0]?.price;
+  const uniqueSuppliers = leaderboard.length;
   const avgPrice =
-    rfq.bids.length > 0
-      ? rfq.bids.reduce((a, b) => a + b.price, 0) / rfq.bids.length
+    leaderboard.length > 0
+      ? leaderboard.reduce((a, b) => a + b.price, 0) / leaderboard.length
       : 0;
 
   return (
     <div className="min-h-screen pt-32 pb-16 px-4 sm:px-8 relative overflow-hidden bg-[#05050A]">
-      <div className={`absolute top-0 right-0 w-[800px] h-[800px] rounded-full blur-[200px] pointer-events-none transition-colors duration-1000 opacity-20 ${rfq.status === 'CLOSED' || isOver ? 'bg-red-600' : isUrgent ? 'bg-amber-500 animate-pulse' : 'bg-indigo-600'}`} />
+      <div
+        className={`absolute top-0 right-0 w-[800px] h-[800px] rounded-full blur-[200px] pointer-events-none transition-colors duration-1000 opacity-20 ${rfq.status === "CLOSED" || isOver ? "bg-red-600" : isUrgent ? "bg-amber-500 animate-pulse" : "bg-indigo-600"}`}
+      />
       <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none mix-blend-overlay" />
 
       <Header />
-      
+
       <div className="max-w-[1400px] mx-auto space-y-8 relative z-10 block">
         {/* Top Command Bar */}
         <motion.div
@@ -149,7 +163,9 @@ export default function BuyerLiveAuction() {
               >
                 <ArrowLeft size={16} />
               </Link>
-              <h2 className="text-3xl md:text-5xl font-black tracking-tight text-white">{rfq.title}</h2>
+              <h2 className="text-3xl md:text-5xl font-black tracking-tight text-white">
+                {rfq.title}
+              </h2>
               <span
                 className={`px-4 py-1.5 rounded-full text-xs font-bold tracking-widest uppercase border backdrop-blur-md shadow-sm ml-2 ${
                   rfq.status === "ACTIVE"
@@ -166,12 +182,18 @@ export default function BuyerLiveAuction() {
             <div className="flex flex-wrap gap-x-8 gap-y-4 text-sm bg-black/40 px-6 py-3 rounded-full border border-white/5 w-fit">
               <div className="flex items-center gap-2">
                 <Shield size={14} className="text-indigo-400" />
-                <span className="text-zinc-500 font-bold uppercase tracking-widest text-[10px]">Trigger:</span>
-                <span className="text-zinc-300 font-mono font-medium text-xs">{rfq.trigger_type.replace('_', ' ')}</span>
+                <span className="text-zinc-500 font-bold uppercase tracking-widest text-[10px]">
+                  Trigger:
+                </span>
+                <span className="text-zinc-300 font-mono font-medium text-xs">
+                  {rfq.trigger_type.replace("_", " ")}
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <AlertTriangle size={14} className="text-red-400" />
-                <span className="text-zinc-500 font-bold uppercase tracking-widest text-[10px]">Drop-dead Time:</span>
+                <span className="text-zinc-500 font-bold uppercase tracking-widest text-[10px]">
+                  Drop-dead Time:
+                </span>
                 <span className="text-white font-mono text-xs font-medium">
                   {new Date(rfq.forced_close_time).toLocaleTimeString()}
                 </span>
@@ -179,20 +201,65 @@ export default function BuyerLiveAuction() {
             </div>
           </div>
 
-          <div className="flex flex-col md:flex-row items-center gap-6 xl:gap-12 w-full xl:w-auto">
+          <div className="flex flex-col md:flex-row items-center gap-6 xl:gap-12 w-full xl:w-auto mt-6 xl:mt-0">
+            {/* Operator Controls */}
+            {rfq.status === "ACTIVE" && (
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={async () => {
+                    if (
+                      confirm(
+                        "Are you sure you want to force finalize this market now? This will lock in the current lowest bid.",
+                      )
+                    ) {
+                      try {
+                        await rfqService.earlyCloseRfq(rfqId);
+                        // The socket will broadcast AUCTION_CLOSED and update the UI automatically.
+                      } catch (e) {
+                        alert("Failed to force close market");
+                      }
+                    }
+                  }}
+                  className="px-5 py-2.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 font-bold text-xs uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all shadow-[0_0_15px_rgba(239,68,68,0.2)] flex items-center gap-2 group"
+                >
+                  <Zap size={14} className="group-hover:animate-pulse" /> Force
+                  Finalize
+                </button>
+              </div>
+            )}
+
+            <div className="hidden xl:block w-px h-16 bg-white/10" />
+
             <div className="flex flex-col items-center xl:items-end w-full xl:w-auto">
               <span className="text-zinc-500 font-bold uppercase tracking-widest text-[10px] mb-2 flex items-center gap-2">
-                <Clock size={12} className={isUrgent && rfq.status === 'ACTIVE' ? 'text-amber-500 animate-pulse' : 'text-zinc-500'} /> 
-                {rfq.status === 'ACTIVE' ? 'Time Remaining' : 'Auction Concluded'}
+                <Clock
+                  size={12}
+                  className={
+                    isUrgent && rfq.status === "ACTIVE"
+                      ? "text-amber-500 animate-pulse"
+                      : "text-zinc-500"
+                  }
+                />
+                {rfq.status === "ACTIVE"
+                  ? "Time Remaining"
+                  : "Auction Concluded"}
               </span>
-              <div className={`text-6xl md:text-7xl lg:text-8xl font-black font-mono tracking-tighter leading-none ${
-                rfq.status === 'CLOSED' || isOver ? 'text-zinc-600' : isUrgent ? 'text-amber-400 drop-shadow-[0_0_30px_rgba(251,191,36,0.4)]' : 'text-white'
-              }`}>
+              <div
+                className={`text-6xl md:text-7xl lg:text-5xl font-black font-mono tracking-tighter leading-none ${
+                  rfq.status === "CLOSED" || isOver
+                    ? "text-zinc-600"
+                    : isUrgent
+                      ? "text-amber-400 drop-shadow-[0_0_30px_rgba(251,191,36,0.4)]"
+                      : "text-white"
+                }`}
+              >
                 {timeLeft}
               </div>
             </div>
-            
-            <div className={`hidden md:block w-px h-24 ${isUrgent ? 'bg-amber-500/20' : 'bg-white/10'}`} />
+
+            <div
+              className={`hidden md:block w-px h-24 ${isUrgent ? "bg-amber-500/20" : "bg-white/10"}`}
+            />
 
             <div className="px-8 py-6 rounded-3xl bg-green-500/10 border border-green-500/20 text-center w-full md:w-auto min-w-[250px] shadow-[0_0_30px_rgba(34,197,94,0.1)] relative overflow-hidden">
               <div className="absolute inset-0 bg-linear-to-t from-green-500/10 to-transparent pointer-events-none" />
@@ -220,8 +287,12 @@ export default function BuyerLiveAuction() {
                 <Zap size={24} className="text-amber-400" />
               </div>
               <div className="text-left">
-                <h3 className="text-xl font-black uppercase tracking-wider">Overtime Triggered</h3>
-                <p className="text-sm font-semibold opacity-90">Auto-extension rules engaged. Timer reset.</p>
+                <h3 className="text-xl font-black uppercase tracking-wider">
+                  Overtime Triggered
+                </h3>
+                <p className="text-sm font-semibold opacity-90">
+                  Auto-extension rules engaged. Timer reset.
+                </p>
               </div>
             </motion.div>
           )}
@@ -236,15 +307,19 @@ export default function BuyerLiveAuction() {
                   <Activity size={20} />
                 </div>
                 <div>
-                  <h3 className="text-xl font-black text-white">Live Operations Floor</h3>
-                  <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest mt-0.5">Real-time Bid Stream</p>
+                  <h3 className="text-xl font-black text-white">
+                    Live Operations Floor
+                  </h3>
+                  <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest mt-0.5">
+                    Real-time Bid Stream
+                  </p>
                 </div>
               </div>
               <span className="px-4 py-1.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-bold text-xs">
-                {rfq.bids.length} TICKS
+                {leaderboard.length} RANKED &bull; {rfq.bids.length} TICKS
               </span>
             </div>
-            
+
             <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 custom-scrollbar bg-linear-to-b from-transparent to-black/40">
               {sortedBids.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-zinc-600 space-y-6">
@@ -253,19 +328,27 @@ export default function BuyerLiveAuction() {
                     <Target size={64} className="opacity-40 relative z-10" />
                   </div>
                   <div className="text-center">
-                    <p className="text-xl font-black text-zinc-400">Awaiting Submissions</p>
-                    <p className="text-sm font-medium mt-1">Socket open. Monitoring inbound traffic.</p>
+                    <p className="text-xl font-black text-zinc-400">
+                      Awaiting Submissions
+                    </p>
+                    <p className="text-sm font-medium mt-1">
+                      Socket open. Monitoring inbound traffic.
+                    </p>
                   </div>
                 </div>
               ) : (
                 <AnimatePresence mode="popLayout">
-                  {sortedBids.map((bid, i) => (
+                  {leaderboard.map((bid, i) => (
                     <motion.div
-                      key={bid.id}
+                      key={bid.supplierId}
                       layout
                       initial={{ opacity: 0, x: -50, scale: 0.95 }}
                       animate={{ opacity: 1, x: 0, scale: 1 }}
-                      transition={{ type: "spring", stiffness: 200, damping: 20 }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 200,
+                        damping: 20,
+                      }}
                       className={`p-5 sm:p-6 rounded-4xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 relative overflow-hidden group ${
                         i === 0
                           ? "bg-green-500/10 border border-green-500/30 shadow-[0_0_30px_rgba(34,197,94,0.15)]"
@@ -274,8 +357,10 @@ export default function BuyerLiveAuction() {
                             : "bg-black/40 border border-white/5"
                       }`}
                     >
-                      {i === 0 && <div className="absolute inset-0 bg-linear-to-r from-green-500/5 to-transparent pointer-events-none" />}
-                      
+                      {i === 0 && (
+                        <div className="absolute inset-0 bg-linear-to-r from-green-500/5 to-transparent pointer-events-none" />
+                      )}
+
                       <div className="flex items-center gap-5 relative z-10">
                         <div
                           className={`w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-black border shadow-inner ${
@@ -290,26 +375,36 @@ export default function BuyerLiveAuction() {
                         </div>
                         <div>
                           <p className="font-black text-lg text-white group-hover:text-indigo-300 transition-colors">
-                            {bid.supplier?.email || `Supplier Entity #${bid.supplierId}`}
+                            {bid.supplier?.email ||
+                              `Supplier Entity #${bid.supplierId}`}
                           </p>
                           <div className="flex items-center gap-3 mt-1">
                             <p className="text-[10px] text-zinc-500 uppercase font-black tracking-widest bg-black/50 px-2 py-0.5 rounded border border-white/5">
-                              ID: #{bid.id}
+                              Best Bid #{bid.id}
                             </p>
                             <p className="text-[10px] text-zinc-400 uppercase font-bold tracking-widest flex items-center gap-1">
                               <History size={10} />
-                              {new Date(bid.timestamp).toLocaleTimeString(undefined, { hour12: false, second: '2-digit' })}
+                              {new Date(bid.timestamp).toLocaleTimeString(
+                                undefined,
+                                { hour12: false, second: "2-digit" },
+                              )}
                             </p>
                           </div>
                         </div>
                       </div>
-                      
+
                       <div className="relative z-10 w-full sm:w-auto text-left sm:text-right bg-black/20 sm:bg-transparent rounded-xl sm:rounded-none p-4 sm:p-0 border border-white/5 sm:border-none">
-                        <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest mb-1 sm:hidden">Quoted Value</p>
+                        <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest mb-1 sm:hidden">
+                          Quoted Value
+                        </p>
                         <p
                           className={`text-3xl sm:text-4xl font-mono font-black tracking-tighter ${i === 0 ? "text-green-400 drop-shadow-[0_0_10px_rgba(34,197,94,0.3)]" : "text-white"}`}
                         >
-                          ${bid.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          $
+                          {bid.price.toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
                         </p>
                       </div>
                     </motion.div>
@@ -328,8 +423,12 @@ export default function BuyerLiveAuction() {
               <div className="space-y-4">
                 <div className="p-5 rounded-2xl bg-black/40 border border-white/5 flex items-center justify-between group hover:border-indigo-500/30 transition-colors">
                   <div>
-                    <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-1">Active Suppliers</p>
-                    <p className="text-3xl font-black text-white">{uniqueSuppliers}</p>
+                    <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-1">
+                      Active Suppliers
+                    </p>
+                    <p className="text-3xl font-black text-white">
+                      {uniqueSuppliers}
+                    </p>
                   </div>
                   <div className="w-12 h-12 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-400 group-hover:scale-110 transition-transform">
                     <Users size={20} />
@@ -337,9 +436,13 @@ export default function BuyerLiveAuction() {
                 </div>
                 <div className="p-5 rounded-2xl bg-black/40 border border-white/5 flex items-center justify-between group hover:border-green-500/30 transition-colors">
                   <div>
-                    <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-1">Average Bid Price</p>
+                    <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-1">
+                      Average Bid Price
+                    </p>
                     <p className="text-2xl font-black font-mono text-zinc-300">
-                      {avgPrice > 0 ? `$${avgPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "--"}
+                      {avgPrice > 0
+                        ? `$${avgPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                        : "--"}
                     </p>
                   </div>
                   <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center text-green-400 group-hover:scale-110 transition-transform">
@@ -348,8 +451,12 @@ export default function BuyerLiveAuction() {
                 </div>
                 <div className="p-5 rounded-2xl bg-black/40 border border-white/5 flex items-center justify-between group hover:border-amber-500/30 transition-colors">
                   <div>
-                    <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-1">Rule Extensions</p>
-                    <p className="text-3xl font-black text-white">{rfq.extensionLogs?.length || 0}</p>
+                    <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-1">
+                      Rule Extensions
+                    </p>
+                    <p className="text-3xl font-black text-white">
+                      {rfq.extensionLogs?.length || 0}
+                    </p>
                   </div>
                   <div className="w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-400 group-hover:scale-110 transition-transform">
                     <Zap size={20} />
