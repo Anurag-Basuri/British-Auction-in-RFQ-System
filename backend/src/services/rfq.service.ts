@@ -74,3 +74,28 @@ export async function findOne(id: number) {
 
   return rfq;
 }
+
+/**
+ * Manually force-close an active RFQ early.
+ */
+export async function earlyClose(buyerId: number, id: number) {
+  const rfq = await prisma.rfq.findUnique({ where: { id } });
+
+  if (!rfq) throw new ApiError(404, "RFQ not found");
+  if (rfq.buyerId !== buyerId)
+    throw new ApiError(403, "Not authorized to modify this RFQ");
+  if (rfq.status !== "ACTIVE")
+    throw new ApiError(400, "RFQ is already closed or not active");
+
+  // Force close is just shifting the close_time to now.
+  const now = new Date();
+  const updated = await prisma.rfq.update({
+    where: { id },
+    data: {
+      status: "CLOSED",
+      close_time: now,
+    },
+  });
+
+  return updated;
+}

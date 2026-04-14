@@ -59,9 +59,7 @@ function useCountdown(closeTime: string | undefined) {
         const mins = Math.floor((diff % 3600000) / 60000);
         const secs = Math.floor((diff % 60000) / 1000);
         setTimeLeft(
-          [hrs, mins, secs]
-            .map((v) => (v < 10 ? "0" + v : v))
-            .join(":")
+          [hrs, mins, secs].map((v) => (v < 10 ? "0" + v : v)).join(":"),
         );
         setIsUrgent(diff < 120000); // under 2 mins
       }
@@ -94,6 +92,7 @@ export default function SupplierLiveAuction() {
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<BidForm>({
     resolver: zodResolver(bidSchema),
@@ -159,24 +158,40 @@ export default function SupplierLiveAuction() {
       <div className="min-h-screen flex items-center justify-center bg-[#05050A]">
         <div className="flex flex-col items-center gap-4">
           <div className="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs animate-pulse">Establishing Connection...</p>
+          <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs animate-pulse">
+            Establishing Connection...
+          </p>
         </div>
       </div>
     );
   }
 
   const sortedBids = [...rfq.bids].sort((a, b) => a.price - b.price);
-  const l1Price = sortedBids[0]?.price;
-  const userRank = sortedBids.findIndex((b) => b.supplierId === user?.id) + 1;
+
+  // Unique leaderboard: only the best (lowest) bid per supplier
+  const leaderboard = (() => {
+    const best = new Map<number, (typeof sortedBids)[0]>();
+    for (const bid of sortedBids) {
+      if (!best.has(bid.supplierId)) {
+        best.set(bid.supplierId, bid);
+      }
+    }
+    return Array.from(best.values());
+  })();
+
+  const l1Price = leaderboard[0]?.price;
+  const userRank = leaderboard.findIndex((b) => b.supplierId === user?.id) + 1;
   const isWinning = userRank === 1;
 
   return (
     <div className="min-h-screen pt-32 pb-16 px-4 sm:px-8 relative overflow-hidden bg-[#05050A]">
-      <div className={`absolute top-0 left-0 w-[600px] h-[600px] rounded-full blur-[200px] pointer-events-none transition-colors duration-1000 opacity-20 ${rfq.status === 'CLOSED' || isOver ? 'bg-red-600' : isWinning ? 'bg-green-500' : 'bg-emerald-600'}`} />
+      <div
+        className={`absolute top-0 left-0 w-[600px] h-[600px] rounded-full blur-[200px] pointer-events-none transition-colors duration-1000 opacity-20 ${rfq.status === "CLOSED" || isOver ? "bg-red-600" : isWinning ? "bg-green-500" : "bg-emerald-600"}`}
+      />
       <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none mix-blend-overlay" />
 
       <Header />
-      
+
       <div className="max-w-[1400px] mx-auto space-y-8 relative z-10">
         {/* Top Intelligence Bar */}
         <motion.div
@@ -193,7 +208,9 @@ export default function SupplierLiveAuction() {
               >
                 <ArrowLeft size={16} />
               </Link>
-              <h2 className="text-3xl md:text-5xl font-black tracking-tight text-white">{rfq.title}</h2>
+              <h2 className="text-3xl md:text-5xl font-black tracking-tight text-white">
+                {rfq.title}
+              </h2>
               <span
                 className={`px-4 py-1.5 rounded-full text-xs font-bold tracking-widest uppercase border backdrop-blur-md shadow-sm ml-2 ${
                   rfq.status === "ACTIVE"
@@ -207,11 +224,18 @@ export default function SupplierLiveAuction() {
                 {rfq.status}
               </span>
             </div>
-            
+
             <div className="flex items-center gap-4 bg-black/40 px-6 py-3 rounded-full border border-white/5 w-fit">
               <span className="text-zinc-500 font-bold uppercase tracking-widest text-[10px] flex items-center gap-2">
-                <Clock size={12} className={isUrgent && rfq.status === 'ACTIVE' ? 'text-amber-500 animate-pulse' : 'text-zinc-500'} /> 
-                {rfq.status === 'ACTIVE' ? 'Hard Close' : 'Concluded'}
+                <Clock
+                  size={12}
+                  className={
+                    isUrgent && rfq.status === "ACTIVE"
+                      ? "text-amber-500 animate-pulse"
+                      : "text-zinc-500"
+                  }
+                />
+                {rfq.status === "ACTIVE" ? "Hard Close" : "Concluded"}
               </span>
               <span className="text-white font-mono text-xs font-medium">
                 {new Date(rfq.forced_close_time).toLocaleTimeString()}
@@ -224,25 +248,37 @@ export default function SupplierLiveAuction() {
               <span className="text-zinc-500 font-bold uppercase tracking-widest text-[10px] mb-2 flex items-center gap-2">
                 <Clock size={12} /> Live Countdown
               </span>
-              <div className={`text-6xl md:text-7xl lg:text-8xl font-black font-mono tracking-tighter leading-none ${
-                rfq.status === 'CLOSED' || isOver ? 'text-zinc-600' : isUrgent ? 'text-amber-400 drop-shadow-[0_0_30px_rgba(251,191,36,0.4)]' : 'text-white'
-              }`}>
+              <div
+                className={`text-6xl md:text-7xl lg:text-8xl font-black font-mono tracking-tighter leading-none ${
+                  rfq.status === "CLOSED" || isOver
+                    ? "text-zinc-600"
+                    : isUrgent
+                      ? "text-amber-400 drop-shadow-[0_0_30px_rgba(251,191,36,0.4)]"
+                      : "text-white"
+                }`}
+              >
                 {timeLeft}
               </div>
             </div>
 
             <div className={`hidden md:block w-px h-24 bg-white/10`} />
 
-            <div className={`px-8 py-6 rounded-3xl border text-center w-full md:w-auto min-w-[250px] relative overflow-hidden transition-all duration-500 ${
-              isWinning 
-                ? 'bg-green-500/10 border-green-500/30 shadow-[0_0_40px_rgba(34,197,94,0.15)]' 
-                : userRank > 0 
-                  ? 'bg-indigo-500/10 border-indigo-500/30 shadow-[0_0_40px_rgba(99,102,241,0.15)]' 
-                  : 'bg-white/5 border-white/10'
-            }`}>
-              <div className={`absolute inset-0 bg-linear-to-t pointer-events-none ${isWinning ? 'from-green-500/20' : 'from-indigo-500/20'}`} />
-              <p className={`text-[11px] font-black uppercase tracking-widest mb-2 flex items-center justify-center gap-2 relative z-10 ${isWinning ? 'text-green-400' : 'text-indigo-400'}`}>
-                {isWinning ? <Trophy size={14} /> : <Target size={14} />} 
+            <div
+              className={`px-8 py-6 rounded-3xl border text-center w-full md:w-auto min-w-[250px] relative overflow-hidden transition-all duration-500 ${
+                isWinning
+                  ? "bg-green-500/10 border-green-500/30 shadow-[0_0_40px_rgba(34,197,94,0.15)]"
+                  : userRank > 0
+                    ? "bg-indigo-500/10 border-indigo-500/30 shadow-[0_0_40px_rgba(99,102,241,0.15)]"
+                    : "bg-white/5 border-white/10"
+              }`}
+            >
+              <div
+                className={`absolute inset-0 bg-linear-to-t pointer-events-none ${isWinning ? "from-green-500/20" : "from-indigo-500/20"}`}
+              />
+              <p
+                className={`text-[11px] font-black uppercase tracking-widest mb-2 flex items-center justify-center gap-2 relative z-10 ${isWinning ? "text-green-400" : "text-indigo-400"}`}
+              >
+                {isWinning ? <Trophy size={14} /> : <Target size={14} />}
                 Your Position
               </p>
               <p className="text-5xl font-black text-white font-mono tracking-tighter relative z-10">
@@ -266,8 +302,12 @@ export default function SupplierLiveAuction() {
                 <Zap size={24} className="text-amber-400" />
               </div>
               <div className="text-left">
-                <h3 className="text-xl font-black uppercase tracking-wider">Overtime Triggered</h3>
-                <p className="text-sm font-semibold opacity-90">Timer reset due to competitor activity.</p>
+                <h3 className="text-xl font-black uppercase tracking-wider">
+                  Overtime Triggered
+                </h3>
+                <p className="text-sm font-semibold opacity-90">
+                  Timer reset due to competitor activity.
+                </p>
               </div>
             </motion.div>
           )}
@@ -277,26 +317,114 @@ export default function SupplierLiveAuction() {
           {/* Action Center - Bid Form */}
           <div className="lg:col-span-8 flex flex-col gap-8">
             <div className="glass-card p-8 rounded-4xl border border-white/5 bg-[#0C0C12]/80 shadow-[0_10px_40px_rgba(0,0,0,0.5)] flex-1 relative overflow-hidden">
-              <div className="flex items-center gap-3 mb-8 pb-6 border-b border-white/10">
-                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
-                  <Activity size={24} />
+              <div className="flex items-center justify-between mb-8 pb-6 border-b border-white/10">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                    <Activity size={24} />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-black text-white">
+                      Execution Terminal
+                    </h3>
+                    <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest mt-1">
+                      Configure and deploy competitive quote
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-2xl font-black text-white">Execution Terminal</h3>
-                  <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest mt-1">Configure and deploy competitive quote</p>
-                </div>
+
+                {/* Quick Actions */}
+                {rfq.status === "ACTIVE" &&
+                  l1Price &&
+                  l1Price > 0 &&
+                  !isWinning && (
+                    <div className="hidden lg:flex items-center gap-2">
+                      <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mr-2">
+                        Quick Beat L1:
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const target = l1Price * 0.99; // 1% undercut
+                          setValue(
+                            "freight_charges",
+                            +(target * 0.8).toFixed(2),
+                          );
+                          setValue(
+                            "origin_charges",
+                            +(target * 0.1).toFixed(2),
+                          );
+                          setValue(
+                            "destination_charges",
+                            +(target * 0.1).toFixed(2),
+                          );
+                        }}
+                        className="px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold text-xs hover:bg-emerald-500 hover:text-white transition-all shadow-sm"
+                      >
+                        -1%
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const target = l1Price * 0.95; // 5% undercut
+                          setValue(
+                            "freight_charges",
+                            +(target * 0.8).toFixed(2),
+                          );
+                          setValue(
+                            "origin_charges",
+                            +(target * 0.1).toFixed(2),
+                          );
+                          setValue(
+                            "destination_charges",
+                            +(target * 0.1).toFixed(2),
+                          );
+                        }}
+                        className="px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold text-xs hover:bg-emerald-500 hover:text-white transition-all shadow-sm"
+                      >
+                        -5%
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const target = l1Price * 0.9; // 10% undercut
+                          setValue(
+                            "freight_charges",
+                            +(target * 0.8).toFixed(2),
+                          );
+                          setValue(
+                            "origin_charges",
+                            +(target * 0.1).toFixed(2),
+                          );
+                          setValue(
+                            "destination_charges",
+                            +(target * 0.1).toFixed(2),
+                          );
+                        }}
+                        className="px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold text-xs hover:bg-emerald-500 hover:text-white transition-all shadow-sm"
+                      >
+                        -10%
+                      </button>
+                    </div>
+                  )}
               </div>
 
               {rfq.status === "CLOSED" ? (
                 <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-20 flex items-center justify-center">
                   <div className="flex flex-col items-center gap-4 p-8 bg-red-500/10 border border-red-500/20 rounded-4xl">
                     <ShieldAlert size={48} className="text-red-400" />
-                    <h3 className="text-2xl font-black text-white">Market Closed</h3>
-                    <p className="text-zinc-400">Submissions are currently locked.</p>
+                    <h3 className="text-2xl font-black text-white">
+                      Market Closed
+                    </h3>
+                    <p className="text-zinc-400">
+                      Submissions are currently locked.
+                    </p>
                   </div>
                 </div>
               ) : (
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 relative z-10">
+                <form
+                  onSubmit={handleSubmit(onSubmit)}
+                  className="space-y-8 relative z-10"
+                >
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {/* Financials */}
                     <div className="space-y-2">
@@ -306,13 +434,17 @@ export default function SupplierLiveAuction() {
                       <input
                         type="number"
                         step="0.01"
-                        {...register("freight_charges", { valueAsNumber: true })}
+                        {...register("freight_charges", {
+                          valueAsNumber: true,
+                        })}
                         className="input-field bg-black/40 border-white/10 focus:border-emerald-500/50 py-4 text-xl font-mono rounded-xl group"
                         placeholder="0.00"
                         aria-invalid={!!errors.freight_charges}
                       />
                       {errors.freight_charges && (
-                        <p className="text-red-400 text-xs ml-1 font-bold">{errors.freight_charges.message}</p>
+                        <p className="text-red-400 text-xs ml-1 font-bold">
+                          {errors.freight_charges.message}
+                        </p>
                       )}
                     </div>
                     <div className="space-y-2">
@@ -328,7 +460,9 @@ export default function SupplierLiveAuction() {
                         aria-invalid={!!errors.origin_charges}
                       />
                       {errors.origin_charges && (
-                        <p className="text-red-400 text-xs ml-1 font-bold">{errors.origin_charges.message}</p>
+                        <p className="text-red-400 text-xs ml-1 font-bold">
+                          {errors.origin_charges.message}
+                        </p>
                       )}
                     </div>
                     <div className="space-y-2">
@@ -338,13 +472,17 @@ export default function SupplierLiveAuction() {
                       <input
                         type="number"
                         step="0.01"
-                        {...register("destination_charges", { valueAsNumber: true })}
+                        {...register("destination_charges", {
+                          valueAsNumber: true,
+                        })}
                         className="input-field bg-black/40 border-white/10 focus:border-emerald-500/50 py-4 text-xl font-mono rounded-xl"
                         placeholder="0.00"
                         aria-invalid={!!errors.destination_charges}
                       />
                       {errors.destination_charges && (
-                        <p className="text-red-400 text-xs ml-1 font-bold">{errors.destination_charges.message}</p>
+                        <p className="text-red-400 text-xs ml-1 font-bold">
+                          {errors.destination_charges.message}
+                        </p>
                       )}
                     </div>
                   </div>
@@ -361,7 +499,9 @@ export default function SupplierLiveAuction() {
                         aria-invalid={!!errors.transit_time}
                       />
                       {errors.transit_time && (
-                        <p className="text-red-400 text-xs ml-1 font-bold">{errors.transit_time.message}</p>
+                        <p className="text-red-400 text-xs ml-1 font-bold">
+                          {errors.transit_time.message}
+                        </p>
                       )}
                     </div>
                     <div className="space-y-2">
@@ -375,7 +515,9 @@ export default function SupplierLiveAuction() {
                         aria-invalid={!!errors.quote_validity}
                       />
                       {errors.quote_validity && (
-                        <p className="text-red-400 text-xs ml-1 font-bold">{errors.quote_validity.message}</p>
+                        <p className="text-red-400 text-xs ml-1 font-bold">
+                          {errors.quote_validity.message}
+                        </p>
                       )}
                     </div>
                   </div>
@@ -408,7 +550,10 @@ export default function SupplierLiveAuction() {
                         <Loader2 size={24} className="animate-spin" />
                       ) : (
                         <>
-                          <Send size={20} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                          <Send
+                            size={20}
+                            className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform"
+                          />
                           Execute Market Bid
                         </>
                       )}
@@ -426,20 +571,22 @@ export default function SupplierLiveAuction() {
                 <div className="p-1.5 rounded-lg bg-white/5 border border-white/10 text-zinc-400">
                   <TrendingDown size={18} />
                 </div>
-                <h3 className="font-bold text-white uppercase tracking-wider text-sm">Orderbook</h3>
+                <h3 className="font-bold text-white uppercase tracking-wider text-sm">
+                  Orderbook
+                </h3>
               </div>
               <span className="text-[10px] text-emerald-400 uppercase font-black tracking-widest bg-emerald-500/10 px-2 py-1 rounded border border-emerald-500/20">
-                {rfq.bids.length} entries
+                {leaderboard.length} ranked
               </span>
             </div>
-            
+
             <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar bg-linear-to-b from-transparent to-black/40">
               <AnimatePresence mode="popLayout">
-                {sortedBids.map((bid, i) => {
+                {leaderboard.map((bid, i) => {
                   const isMe = bid.supplierId === user?.id;
                   return (
                     <motion.div
-                      key={bid.id}
+                      key={bid.supplierId}
                       layout
                       initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
@@ -466,16 +613,29 @@ export default function SupplierLiveAuction() {
                           {i === 0 ? <Trophy size={16} /> : `L${i + 1}`}
                         </div>
                         <div>
-                          <p className={`font-black text-sm ${isMe ? "text-indigo-400" : "text-zinc-300"}`}>
-                            {isMe ? "YOUR ENTITY" : `Supplier #${bid.supplierId}`}
+                          <p
+                            className={`font-black text-sm ${isMe ? "text-indigo-400" : "text-zinc-300"}`}
+                          >
+                            {isMe
+                              ? "YOUR ENTITY"
+                              : `Supplier #${bid.supplierId}`}
                           </p>
                           <p className="text-[9px] text-zinc-600 uppercase font-bold tracking-widest mt-0.5">
-                            {new Date(bid.timestamp).toLocaleTimeString(undefined, { hour12: false })}
+                            {new Date(bid.timestamp).toLocaleTimeString(
+                              undefined,
+                              { hour12: false },
+                            )}
                           </p>
                         </div>
                       </div>
-                      <p className={`text-xl font-mono font-black ${i === 0 ? "text-green-400" : isMe ? "text-indigo-300" : "text-white"}`}>
-                        ${bid.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      <p
+                        className={`text-xl font-mono font-black ${i === 0 ? "text-green-400" : isMe ? "text-indigo-300" : "text-white"}`}
+                      >
+                        $
+                        {bid.price.toLocaleString(undefined, {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
                       </p>
                     </motion.div>
                   );
