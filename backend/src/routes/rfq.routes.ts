@@ -7,6 +7,7 @@ import {
   createRfqController,
   findAllRfqController,
   findOneRfqController,
+  earlyCloseRfqController,
 } from "../controllers/rfq.controller.js";
 
 const router = Router();
@@ -22,5 +23,11 @@ router.post(
 );
 router.get("/", findAllRfqController);
 router.get("/:id", findOneRfqController);
+
+router.post(
+  "/:id/close-early",
+  requireRole(["BUYER"]),
+  earlyCloseRfqController,
+);
 
 export default router;

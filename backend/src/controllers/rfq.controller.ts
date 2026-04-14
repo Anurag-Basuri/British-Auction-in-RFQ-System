@@ -30,3 +30,19 @@ export const findOneRfqController = asyncHandler(
       .json(new ApiResponse(200, result, "RFQ details retrieved successfully"));
   },
 );
+
+import { broadcastToRfq } from "../lib/socket.js";
+export const earlyCloseRfqController = asyncHandler(
+  async (req: Request, res: Response) => {
+    const user = (req as any).user;
+    const rfqId = +req.params.id;
+    const result = await rfqService.earlyClose(user.sub, rfqId);
+
+    // Broadcast the sudden closure
+    broadcastToRfq(rfqId, "AUCTION_CLOSED", { id: rfqId });
+
+    res
+      .status(200)
+      .json(new ApiResponse(200, result, "RFQ forcefully closed early"));
+  },
+);
