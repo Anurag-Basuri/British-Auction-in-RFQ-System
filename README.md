@@ -11,9 +11,11 @@ Designed for enterprise scale, this platform mathematically enforces auction int
 - **Real-Time Live Bidding Arenas:** Sub-second latency utilizing **Socket.IO** for instantaneous bid unshifting, live timer updates, and contextual leaderboard recalculations. Optimistic UI updates guarantee zero perceived latency for the bidder.
 - **Dynamic Auction Extensions (British Mechanics):** Built-in "British Auction" mechanics. If a supplier places a competitive bid within the final `X` minutes (the Trigger Window), the auction autonomously extends by `Y` minutes. This entirely prevents "auction sniping" and encourages true market-value price discovery.
 - **Intelligent Scheduling Engine:** Powered by **Redis & BullMQ**. The system schedules pinpoint accurate closures using background workers that evaluate state and cleanly transition auction statuses from `ACTIVE` to `CLOSED`. Heavy state modifications are offloaded from the main Node event loop.
+- **Unique Competitor Leaderboards:** Advanced frontend filtering drops raw bid logs replacing them with true unique competitor mapping, eliminating psychological spoofing from opponents.
 - **Premium Glassmorphic UX/UI:** Frontend designed with deep midnight dark-mode aesthetics, custom CSS variable tokens, Framer Motion staggered micro-animations, and exact-dimension skeleton loading states targeting zero layout shifts.
+- **Operational UX Controls:** Features aggressive tooling without rule violations. Buyers have a `Force Finalize Market` protocol to freeze auctions manually without breaching maximum limits. Suppliers utilize `-1%`, `-5%`, and `-10%` Quick Action desks for calculated edge-attacks.
 - **Strongly Typed Data Fortresses:** End-to-end type safety. Data flows securely from the PostgreSQL Database (via Prisma ORM), through Express/Zod validation controllers, across the wire, and directly into the Next.js Client `useQuery` hooks with mirrored TypeScript interfaces.
-- **Role-Based Access Control (RBAC):** Strict topological separation. **Buyers** can create and monitor auctions but are cryptographically prevented from bidding. **Suppliers** can bid and monitor but cannot initiate auctions.
+- **Authentication & RBAC:** Features Google OAuth One-Tap sign on alongside Email/Password protocols. Strict topological separation. **Buyers** can create and monitor auctions, **Suppliers** can bid and scan markets via the Execution Terminal.
 
 ---
 
@@ -48,9 +50,8 @@ Designed for enterprise scale, this platform mathematically enforces auction int
 
 The architecture is strictly divided into a scalable mono-repo.
 
-For deep technical analysis of how data flows through each environment, review our localized architecture documents:
-- 👉 **[Backend Architecture Documentation](./backend/ARCHITECTURE.md)** — Covers dependency injection, transactions, and worker orchestration.
-- 👉 **[Frontend Architecture Documentation](./frontend/ARCHITECTURE.md)** — Covers Service-Oriented Hooks, Socket cache injection, and Context layering.
+For deep technical analysis of how data flows through each environment, review our localized architecture document:
+- 👉 **[Root Architecture Documentation](./ARCHITECTURE.md)** — Covers dependency injection, transactions, worker orchestration, and unique frontend rendering logic.
 
 ```text
 british-auction-rfq/
@@ -125,6 +126,8 @@ Open an independent terminal. The frontend environment dictates its connection p
 # frontend/.env.local
 NEXT_PUBLIC_API_URL=http://localhost:3000
 NEXT_PUBLIC_WS_URL=http://localhost:3000
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=your_google_cloud_oauth_client_id.apps.googleusercontent.com
+
 ```
 
 Boot the client:
