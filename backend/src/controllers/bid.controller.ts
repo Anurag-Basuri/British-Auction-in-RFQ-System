@@ -16,6 +16,7 @@ export const createBidController = asyncHandler(
       destination_charges,
       transit_time,
       quote_validity,
+      client_bid_id,
     } = req.body;
 
     const result = await bidService.createBid(rfqId, user.sub, {
@@ -24,6 +25,7 @@ export const createBidController = asyncHandler(
       destination_charges,
       transit_time,
       quote_validity: new Date(quote_validity),
+      client_bid_id,
     });
 
     if (result.close_time) {

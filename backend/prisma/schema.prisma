@@ -78,6 +78,8 @@ model Bid {
   
   timestamp           DateTime @default(now())
   
+  client_bid_id       String?  @unique
+  
   triggeringExtensions ExtensionLog[]
   
   @@index([rfqId, price(sort: Asc), timestamp(sort: Asc)])
