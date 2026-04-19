@@ -67,17 +67,20 @@ export function errorHandler(
     ...(isProduction ? {} : { stack: error.stack }),
   };
 
-  // Log error accurately
+  // Log error accurately to console with full context
+  const logPayload = {
+    path: req.path,
+    method: req.method,
+    status: error.statusCode,
+    message: error.message,
+    errors: error.errors,
+    stack: error.stack,
+  };
+
   if (error.statusCode >= 500) {
-    logger.error(
-      { err: error, path: req.path },
-      "Unhandled Critical Server Error",
-    );
+    logger.error(logPayload, "❌ CRITICAL SERVER ERROR");
   } else {
-    logger.warn(
-      { path: req.path, status: error.statusCode, message: error.message },
-      "Client Request Error",
-    );
+    logger.warn(logPayload, "⚠️ API CLIENT ERROR");
   }
 
   res.status(error.statusCode).json(responseData);

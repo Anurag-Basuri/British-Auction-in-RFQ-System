@@ -43,14 +43,8 @@ export function startWorker() {
   });
 
   activeWorker.on("error", (err) => {
-    // Silently handle Redis connection errors —
-    // BullMQ will auto-reconnect when Redis becomes available.
-    if (
-      !err.message.includes("ECONNREFUSED") &&
-      !err.message.includes("Connection is closed")
-    ) {
-      logger.error({ error: err.message }, "Worker processing error");
-    }
+    // Log all worker processing and connection errors as requested.
+    logger.error({ err: err.message, stack: err.stack }, "Worker Error");
   });
 
   logger.info("Auction background worker initialized");

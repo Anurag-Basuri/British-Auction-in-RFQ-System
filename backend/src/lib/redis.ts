@@ -13,8 +13,8 @@ export function createRedisConnection(clientName: string) {
   });
 
   connection.on("error", (err: any) => {
-    // Explicitly trap and silence background socket TCP errors.
-    // They don't need to be repeatedly printed; the application health logs will reflect the status natively.
+    // Explicitly log background socket TCP errors as requested.
+    logger.error({ clientName, err: err.message }, "Redis Connection Error");
   });
 
   return connection;
