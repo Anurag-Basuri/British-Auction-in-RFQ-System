@@ -252,7 +252,7 @@ export default function SupplierDashboard() {
                       </div>
 
                       {/* Deadline */}
-                      <div className="w-36 md:text-right">
+                      <div className="w-36 md:text-right flex flex-col md:items-end">
                         <div className="flex items-center gap-2 md:justify-end text-sm">
                           <Clock
                             size={14}
@@ -274,15 +274,23 @@ export default function SupplierDashboard() {
                             })}
                           </span>
                         </div>
+                        <div className="flex items-center gap-1 md:justify-end mt-1">
+                          <span className="text-[9px] text-red-500 uppercase font-black tracking-widest">
+                            Drop-dead: {new Date(rfq.forced_close_time).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", hour12: false })}
+                          </span>
+                        </div>
                       </div>
 
-                      {/* Market Depth */}
-                      <div className="w-28 md:text-right">
+                      {/* Market Depth / Lowest Bid */}
+                      <div className="w-28 md:text-right flex flex-col md:items-end">
                         <div className="flex items-center gap-2 md:justify-end text-sm">
                           <TrendingDown size={14} className="text-indigo-400" />
-                          <span className="text-zinc-400 font-mono font-medium">
-                            {rfq._count?.bids || 0} bids
+                          <span className="text-zinc-300 font-mono font-bold">
+                            {rfq.currentLowestBid ? `$${rfq.currentLowestBid.toFixed(2)}` : "--"}
                           </span>
+                        </div>
+                        <div className="text-[9px] text-zinc-500 uppercase font-bold tracking-widest mt-1">
+                          {rfq._count?.bids || 0} BIDS
                         </div>
                       </div>
 

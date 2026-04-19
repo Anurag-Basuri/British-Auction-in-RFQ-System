@@ -30,6 +30,7 @@ export interface RFQ {
   _count?: {
     bids: number;
   };
+  currentLowestBid?: number | null;
 }
 
 export interface Bid {
@@ -92,6 +93,7 @@ export interface CreateBidDto {
   destination_charges: number;
   transit_time: string;
   quote_validity: string;
+  client_bid_id?: string;
 }
 
 export interface BidResult {

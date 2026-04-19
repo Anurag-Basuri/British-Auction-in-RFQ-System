@@ -186,16 +186,21 @@ export default function BuyerDashboard() {
                     <div className="grid grid-cols-2 gap-4 border-t border-white/10 pt-6 mt-6 relative z-10">
                       <div className="flex flex-col gap-1">
                         <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Deadline</span>
-                        <div className="flex items-center gap-2 text-zinc-300 font-medium">
-                          <Clock size={16} className="text-indigo-400" />
-                          <span>{new Date(rfq.close_time).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+                        <div className="flex flex-col gap-0.5">
+                          <div className="flex items-center gap-2 text-zinc-300 font-medium text-sm">
+                            <Clock size={14} className="text-indigo-400" />
+                            <span>{new Date(rfq.close_time).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                          </div>
+                          <div className="text-[9px] text-red-400/80 uppercase font-black tracking-widest flex items-center gap-1 mt-1">
+                            <span>Drop-dead: {new Date(rfq.forced_close_time).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</span>
+                          </div>
                         </div>
                       </div>
                       <div className="flex flex-col gap-1">
-                        <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Activity</span>
-                        <div className="flex items-center gap-2 text-zinc-300 font-medium">
-                          <TrendingDown size={16} className="text-green-400" />
-                          <span>{rfq._count?.bids || 0} Bids</span>
+                        <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Lowest Bid ({rfq._count?.bids || 0})</span>
+                        <div className="flex items-center gap-2 text-green-400 font-black text-lg">
+                          <TrendingDown size={16} />
+                          <span>{rfq.currentLowestBid ? `$${rfq.currentLowestBid.toFixed(2)}` : "--"}</span>
                         </div>
                       </div>
                     </div>

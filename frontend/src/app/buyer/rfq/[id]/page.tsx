@@ -190,6 +190,15 @@ export default function BuyerLiveAuction() {
                 </span>
               </div>
               <div className="flex items-center gap-2">
+                <Zap size={14} className="text-amber-400" />
+                <span className="text-zinc-500 font-bold uppercase tracking-widest text-[10px]">
+                  Config:
+                </span>
+                <span className="text-zinc-300 font-mono font-medium text-xs">
+                  {rfq.trigger_window_mins}m Window / {rfq.extension_mins}m Ext
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
                 <AlertTriangle size={14} className="text-red-400" />
                 <span className="text-zinc-500 font-bold uppercase tracking-widest text-[10px]">
                   Drop-dead Time:
@@ -393,7 +402,7 @@ export default function BuyerLiveAuction() {
                         </div>
                       </div>
 
-                      <div className="relative z-10 w-full sm:w-auto text-left sm:text-right bg-black/20 sm:bg-transparent rounded-xl sm:rounded-none p-4 sm:p-0 border border-white/5 sm:border-none">
+                      <div className="relative z-10 w-full sm:w-auto text-left sm:text-right bg-black/20 sm:bg-transparent rounded-xl sm:rounded-none p-4 sm:p-0 border border-white/5 sm:border-none flex flex-col items-end">
                         <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest mb-1 sm:hidden">
                           Quoted Value
                         </p>
@@ -406,6 +415,11 @@ export default function BuyerLiveAuction() {
                             maximumFractionDigits: 2,
                           })}
                         </p>
+                        <div className="flex gap-2 mt-1">
+                          <span className="text-[9px] text-zinc-400 border border-white/10 bg-black/40 px-1.5 py-0.5 rounded uppercase tracking-wider">F: ${bid.freight_charges}</span>
+                          <span className="text-[9px] text-zinc-400 border border-white/10 bg-black/40 px-1.5 py-0.5 rounded uppercase tracking-wider">O: ${bid.origin_charges}</span>
+                          <span className="text-[9px] text-zinc-400 border border-white/10 bg-black/40 px-1.5 py-0.5 rounded uppercase tracking-wider">D: ${bid.destination_charges}</span>
+                        </div>
                       </div>
                     </motion.div>
                   ))}
@@ -462,6 +476,35 @@ export default function BuyerLiveAuction() {
                     <Zap size={20} />
                   </div>
                 </div>
+              </div>
+            </div>
+
+            {/* Audit Timeline */}
+            <div className="glass-card p-8 rounded-4xl border border-white/5 bg-[#0C0C12]/80 shadow-[0_10px_40px_rgba(0,0,0,0.5)]">
+              <h4 className="text-xs font-black uppercase tracking-widest text-indigo-400 flex items-center gap-3 pb-4 border-b border-white/10 mb-6">
+                <History size={16} /> Audit Timeline
+              </h4>
+              <div className="space-y-4 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
+                {rfq.extensionLogs?.length === 0 ? (
+                  <p className="text-sm text-zinc-500 text-center py-4">No extension events recorded yet.</p>
+                ) : (
+                  rfq.extensionLogs?.map((log, index) => (
+                    <div key={log.id} className="relative pl-6 pb-4 border-l border-white/10 last:border-transparent last:pb-0">
+                      <div className="absolute left-[-5px] top-1 w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)]" />
+                      <div className="flex flex-col gap-1 text-sm bg-black/40 p-3 rounded border border-white/5">
+                        <span className="text-zinc-300 font-medium leading-snug">{log.reason}</span>
+                        <div className="flex justify-between items-center mt-1">
+                          <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">
+                            +{log.extended_mins} MINS
+                          </span>
+                          <span className="text-[10px] text-zinc-600 font-bold tracking-widest">
+                            {new Date(log.createdAt).toLocaleTimeString()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </div>
