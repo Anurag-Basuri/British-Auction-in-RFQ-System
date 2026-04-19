@@ -3,6 +3,7 @@ import { logger } from "../lib/logger.js";
 import { ZodError } from "zod";
 import { ApiError } from "../utils/ApiError.js";
 import { env } from "../config/env.js";
+import { Prisma } from "@prisma/client";
 
 export function errorHandler(
   err: any,
@@ -12,20 +13,50 @@ export function errorHandler(
 ) {
   let error = err;
 
-  // Transform generic errors into ApiError standard format if they aren't already
+  // Transform known errors into ApiError standard format
   if (!(error instanceof ApiError)) {
-    const statusCode = error.statusCode
-      ? error.statusCode
-      : error instanceof ZodError
-        ? 400
-        : 500;
-    const message = error.message || "Something went wrong";
-    error = new ApiError(
-      statusCode,
-      message,
-      error instanceof ZodError ? error.errors : [],
-      error.stack,
-    );
+    let statusCode = error.statusCode || 500;
+    let message = error.message || "Something went wrong";
+    let formattedErrors: any = [];
+
+    // 1. Zod Validation Errors
+    if (error instanceof ZodError) {
+      statusCode = 400;
+      message = "Data validation failed";
+      
+      // Convert Zod's deep array into a readable object map string array
+      const fieldErrors = error.flatten().fieldErrors;
+      formattedErrors = Object.entries(fieldErrors).map(
+        ([field, msgs]) => `${field}: ${msgs?.join(", ")}`
+      );
+    } 
+    // 2. Prisma Database Errors
+    else if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      statusCode = 400;
+      if (error.code === 'P2002') {
+        message = "A conflicting record already exists (Unique constraint failed)";
+      } else if (error.code === 'P2025') {
+        message = "Requested record was not found in the database";
+        statusCode = 404;
+      } else {
+        message = "Database request violated logical constraints";
+      }
+    } 
+    else if (error instanceof Prisma.PrismaClientValidationError) {
+      statusCode = 400;
+      message = "Invalid data provided to database";
+    }
+    // 3. JWT Authentication Errors
+    else if (error.name === "TokenExpiredError") {
+      statusCode = 401;
+      message = "Your session has expired. Please login again.";
+    } 
+    else if (error.name === "JsonWebTokenError") {
+      statusCode = 401;
+      message = "Invalid authentication token provided.";
+    }
+
+    error = new ApiError(statusCode, message, formattedErrors, error.stack);
   }
 
   const isProduction = env.NODE_ENV === "production";

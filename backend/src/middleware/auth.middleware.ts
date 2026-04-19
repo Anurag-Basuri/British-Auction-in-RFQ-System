@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
+import { ApiError } from "../utils/ApiError.js";
 
 /**
  * Express middleware that verifies JWT tokens from the Authorization header.
@@ -15,15 +16,14 @@ export function authMiddleware(
   const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
 
   if (!token) {
-    res.status(401).json({ message: "Token not found" });
-    return;
+    return next(new ApiError(401, "Authentication token not found in request headers"));
   }
 
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET!);
     (req as any).user = payload;
     next();
-  } catch {
-    res.status(401).json({ message: "Token verification failed" });
+  } catch (error) {
+    next(error); // Passes the raw JsonWebTokenError/TokenExpiredError natively to global boundary
   }
 }
