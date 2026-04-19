@@ -54,9 +54,13 @@ export default function CreateRfq() {
   const watchTitle = watch("title");
   const watchTriggerType = watch("trigger_type");
 
+  const scrollToError = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const onSubmit = async (data: RfqForm) => {
     try {
-      setError("");
+      setError(null);
       // Convert to ISO 8601 for the backend
       const payload = {
         ...data,
@@ -68,7 +72,25 @@ export default function CreateRfq() {
       router.push("/buyer");
     } catch (e) {
       setError(e instanceof ApiError ? e : "Failed to create RFQ.");
+      scrollToError();
     }
+  };
+
+  const onInvalid = (errors: any) => {
+    console.log("Form Validation Failed:", errors);
+    // Map react-hook-form errors to ApiError-like structure for ErrorAlert
+    const fieldErrorMessages = Object.entries(errors).map(([field, err]: [string, any]) => {
+      return `${field}: ${err.message || "Required"}`;
+    });
+
+    const clientError = new ApiError(
+      "Infrastructure mapping failed. Please correct the parameters below.",
+      400,
+      fieldErrorMessages
+    );
+
+    setError(clientError);
+    scrollToError();
   };
 
   const triggerOptions = [
@@ -126,7 +148,7 @@ export default function CreateRfq() {
           <ErrorAlert error={error} onDismiss={() => setError(null)} />
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+        <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-8">
               {/* General Details */}
