@@ -30,7 +30,12 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // Observability Middlewares
-app.use(pinoHttp({ logger }));
+app.use(
+  pinoHttp({
+    logger,
+    autoLogging: false, // Only log errors explicitly, ignore normal 200/201 HTTP traffic
+  }),
+);
 app.use(express.json());
 
 // Health check

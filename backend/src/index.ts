@@ -85,13 +85,22 @@ async function gracefulShutdown(signal: string) {
   logger.warn(`Received ${signal}. Gracefully shutting down...`);
 
   // 1. Stop receiving new HTTP traffic
-  server.close(async (err: any) => {
-    if (err) {
-      logger.error({ err }, "Error during HTTP server closure");
-    }
+  const closeServer = async () => {
+    return new Promise<void>((resolve) => {
+      if (!server || !server.listening) {
+        return resolve();
+      }
+      server.close((err: any) => {
+        if (err) logger.error({ err }, "Error during HTTP server closure");
+        resolve();
+      });
+    });
+  };
 
-    try {
-      // 2. Disconnect Real-time engine
+  await closeServer();
+
+  try {
+    // 2. Disconnect Real-time engine
       const io = getSocketServer();
       if (io) {
         io.close();
@@ -115,7 +124,6 @@ async function gracefulShutdown(signal: string) {
       logger.error({ err: e }, "Fatal error during shutdown");
       process.exit(1);
     }
-  });
 
   // Failsafe exit logic
   setTimeout(() => {

@@ -7,7 +7,7 @@ const envSchema = z.object({
   DIRECT_URL: z.string().url().optional(),
   REDIS_URL: z.string().url(), // Allows rediss:// URLs with passwords
   JWT_SECRET: z.string().min(16),
-  PORT: z.coerce.number().default(3000),
+  PORT: z.coerce.number().default(8000),
   NODE_ENV: z
     .enum(["development", "production", "test"])
     .default("development"),
