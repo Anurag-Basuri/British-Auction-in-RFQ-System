@@ -254,11 +254,11 @@ export default function BuyerLiveAuction() {
                   : "Auction Concluded"}
               </span>
               <div
-                className={`text-6xl md:text-7xl lg:text-5xl font-black font-mono tracking-tighter leading-none ${
+                className={`text-6xl md:text-7xl lg:text-5xl font-black font-mono tracking-tighter leading-none transition-all duration-300 ${
                   rfq.status === "CLOSED" || isOver
                     ? "text-zinc-600"
                     : isUrgent
-                      ? "text-amber-400 drop-shadow-[0_0_30px_rgba(251,191,36,0.4)]"
+                      ? "text-red-500 animate-pulse scale-105 drop-shadow-[0_0_40px_rgba(239,68,68,0.8)]"
                       : "text-white"
                 }`}
               >

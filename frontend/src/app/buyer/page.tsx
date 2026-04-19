@@ -153,7 +153,7 @@ export default function BuyerDashboard() {
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
           >
             {rfqs.map((rfq) => (
-              <motion.div key={rfq.id} variants={cardVariants}>
+              <motion.div key={rfq.id} variants={cardVariants} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                 <Link href={`/buyer/rfq/${rfq.id}`} className="group block h-full">
                   <div className="glass-card p-8 h-[300px] flex flex-col justify-between rounded-4xl border border-white/5 bg-[#0C0C12]/80 hover:bg-[#12121A] hover:border-indigo-500/50 hover:shadow-[0_10px_40px_rgba(99,102,241,0.2)] transition-all duration-500 overflow-hidden relative">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
