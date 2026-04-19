@@ -138,9 +138,19 @@ export default function SupplierLiveAuction() {
     };
   }, [rfqId, queryClient]);
 
+  const scrollToError = () => {
+    // Scroll to the bid form area or the alert box
+    const element = document.getElementById("bid-error-anchor");
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth", block: "center" });
+    } else {
+      window.scrollTo({ top: 500, behavior: "smooth" });
+    }
+  };
+
   const onSubmit = async (data: BidForm) => {
     try {
-      setBidError("");
+      setBidError(null);
       setBidSuccess(false);
       await bidService.placeBid(rfqId, {
         ...data,
@@ -152,7 +162,24 @@ export default function SupplierLiveAuction() {
       setTimeout(() => setBidSuccess(false), 3000);
     } catch (e) {
       setBidError(e instanceof ApiError ? e : "Failed to submit bid.");
+      scrollToError();
     }
+  };
+
+  const onInvalid = (errors: any) => {
+    console.log("Bid Form Validation Failed:", errors);
+    const fieldErrorMessages = Object.entries(errors).map(([field, err]: [string, any]) => {
+      return `${field}: ${err.message || "Required"}`;
+    });
+
+    const clientError = new ApiError(
+      "Commercial bid validation failure. Please verify individual line items.",
+      400,
+      fieldErrorMessages
+    );
+
+    setBidError(clientError);
+    scrollToError();
   };
 
   if (isLoading || !rfq) {
@@ -424,7 +451,7 @@ export default function SupplierLiveAuction() {
                 </div>
               ) : (
                 <form
-                  onSubmit={handleSubmit(onSubmit)}
+                  onSubmit={handleSubmit(onSubmit, onInvalid)}
                   className="space-y-8 relative z-10"
                 >
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -524,7 +551,7 @@ export default function SupplierLiveAuction() {
                     </div>
                   </div>
 
-                  <div className="space-y-4">
+                  <div id="bid-error-anchor" className="space-y-4">
                     <ErrorAlert
                       error={bidError}
                       onDismiss={() => setBidError(null)}

@@ -22,7 +22,7 @@ export function errorHandler(
     // 1. Zod Validation Errors
     if (error instanceof ZodError) {
       statusCode = 400;
-      message = "Data validation failed";
+      message = "Protocol synchronization failed. Several mandatory parameters require corrective action.";
       
       // Convert Zod's deep array into a readable object map string array
       const fieldErrors = error.flatten().fieldErrors;
