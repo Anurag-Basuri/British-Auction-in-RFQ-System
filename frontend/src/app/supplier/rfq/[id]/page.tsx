@@ -14,6 +14,7 @@ import { socketClient } from "../../../../lib/socket";
 import { ApiError } from "../../../../lib/api-error";
 import { useAuth } from "../../../../providers/auth-provider";
 import type { RFQDetail, Bid } from "../../../../types/api";
+import { ErrorAlert } from "@/components/ui/error-alert";
 import {
   Clock,
   Target,
@@ -75,7 +76,7 @@ export default function SupplierLiveAuction() {
   const rfqId = Number(Array.isArray(id) ? id[0] : id);
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [bidError, setBidError] = useState("");
+  const [bidError, setBidError] = useState<ApiError | string | null>(null);
   const [bidSuccess, setBidSuccess] = useState(false);
   const [extended, setExtended] = useState(false);
 
@@ -150,7 +151,7 @@ export default function SupplierLiveAuction() {
       reset();
       setTimeout(() => setBidSuccess(false), 3000);
     } catch (e) {
-      setBidError(e instanceof ApiError ? e.message : "Failed to submit bid.");
+      setBidError(e instanceof ApiError ? e : "Failed to submit bid.");
     }
   };
 
@@ -523,11 +524,12 @@ export default function SupplierLiveAuction() {
                     </div>
                   </div>
 
-                  {bidError && (
-                    <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl text-center font-bold text-sm shadow-[0_0_20px_rgba(239,68,68,0.1)]">
-                      {bidError}
-                    </div>
-                  )}
+                  <div className="space-y-4">
+                    <ErrorAlert
+                      error={bidError}
+                      onDismiss={() => setBidError(null)}
+                    />
+                  </div>
 
                   {bidSuccess && (
                     <motion.div
