@@ -3,12 +3,18 @@
 import Link from "next/link";
 import { useAuth } from "../providers/auth-provider";
 import { LogOut, Gavel, User } from "lucide-react";
+import { motion } from "framer-motion";
 
 export default function Header() {
   const { user, logout, isAuthenticated } = useAuth();
 
   return (
-    <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 w-[95%] max-w-5xl">
+    <motion.div 
+      initial={{ y: -100, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ type: "spring", stiffness: 300, damping: 25, delay: 0.1 }}
+      className="fixed top-6 left-1/2 -translate-x-1/2 z-50 w-[95%] max-w-5xl"
+    >
       <header
         className="h-[68px] flex items-center justify-between px-4 sm:px-6 rounded-4xl border border-white/10 shadow-2xl shadow-indigo-500/10 transition-all duration-300 hover:shadow-indigo-500/20 hover:border-white/15"
         style={{
@@ -64,6 +70,6 @@ export default function Header() {
           </nav>
         )}
       </header>
-    </div>
+    </motion.div>
   );
 }

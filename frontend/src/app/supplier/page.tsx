@@ -213,6 +213,8 @@ export default function SupplierDashboard() {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.04, duration: 0.3 }}
+                    whileHover={{ scale: 1.01 }} 
+                    whileTap={{ scale: 0.99 }}
                   >
                     <Link
                       href={`/supplier/rfq/${rfq.id}`}
