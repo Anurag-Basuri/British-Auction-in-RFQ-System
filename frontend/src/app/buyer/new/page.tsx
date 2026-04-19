@@ -9,6 +9,7 @@ import { motion } from "framer-motion";
 import Header from "@/app/header";
 import { rfqService } from "../../../services/rfq.service";
 import { ApiError } from "../../../lib/api-error";
+import { ErrorAlert } from "@/components/ui/error-alert";
 import {
   Rocket,
   ArrowLeft,
@@ -34,7 +35,7 @@ type RfqForm = z.infer<typeof rfqSchema>;
 
 export default function CreateRfq() {
   const router = useRouter();
-  const [error, setError] = useState("");
+  const [error, setError] = useState<ApiError | string | null>(null);
 
   const {
     register,
@@ -66,8 +67,7 @@ export default function CreateRfq() {
       await rfqService.createRfq(payload);
       router.push("/buyer");
     } catch (e) {
-      const err = e instanceof ApiError ? e.message : "Failed to create RFQ.";
-      setError(err);
+      setError(e instanceof ApiError ? e : "Failed to create RFQ.");
     }
   };
 
@@ -122,15 +122,9 @@ export default function CreateRfq() {
           </div>
         </div>
 
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-2xl text-center font-medium mb-8 shadow-[0_0_20px_rgba(239,68,68,0.1)]"
-          >
-            {error}
-          </motion.div>
-        )}
+        <div className="mb-8 max-w-2xl mx-auto">
+          <ErrorAlert error={error} onDismiss={() => setError(null)} />
+        </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -348,7 +342,10 @@ export default function CreateRfq() {
                       <Loader2 size={18} className="animate-spin" />
                     ) : (
                       <>
-                        <Rocket size={18} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform duration-300" />
+                        <Rocket
+                          size={18}
+                          className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform duration-300"
+                        />
                         Deploy Market
                       </>
                     )}

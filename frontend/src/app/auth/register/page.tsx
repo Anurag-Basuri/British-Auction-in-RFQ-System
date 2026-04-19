@@ -8,6 +8,8 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { useAuth } from "../../../providers/auth-provider";
 import { ApiError } from "../../../lib/api-error";
+import { GoogleLogin } from "@react-oauth/google";
+import { ErrorAlert } from "@/components/ui/error-alert";
 import {
   Mail,
   Lock,
@@ -19,7 +21,6 @@ import {
   Users,
   BarChart3,
 } from "lucide-react";
-import { GoogleLogin } from "@react-oauth/google";
 
 const registerSchema = z.object({
   email: z.string().email("Enter a valid email address"),
@@ -31,7 +32,7 @@ type RegisterForm = z.infer<typeof registerSchema>;
 
 export default function RegisterPage() {
   const { register: authRegister, loginWithGoogle } = useAuth();
-  const [error, setError] = useState("");
+  const [error, setError] = useState<ApiError | string | null>(null);
   const [shaking, setShaking] = useState(false);
 
   const {
@@ -52,11 +53,7 @@ export default function RegisterPage() {
       setError("");
       await authRegister(data);
     } catch (e) {
-      const err =
-        e instanceof ApiError
-          ? e.message
-          : "Registration failed. Please try again.";
-      setError(err);
+      setError(e instanceof ApiError ? e : "Registration failed. Please try again.");
       setShaking(true);
       setTimeout(() => setShaking(false), 500);
     }
@@ -166,15 +163,7 @@ export default function RegisterPage() {
             </p>
           </div>
 
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-2xl text-sm text-center font-semibold shadow-[0_0_20px_rgba(239,68,68,0.1)]"
-            >
-              {error}
-            </motion.div>
-          )}
+          <ErrorAlert error={error} onDismiss={() => setError(null)} />
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             {/* ─── Role Selector ─── */}
