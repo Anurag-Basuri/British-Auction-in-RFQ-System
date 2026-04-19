@@ -1,5 +1,7 @@
 import { Server as SocketServer } from "socket.io";
 import type { Server } from "http";
+import { createAdapter } from "@socket.io/redis-adapter";
+import { createRedisConnection } from "./redis.js";
 
 let io: SocketServer | null = null;
 
@@ -8,8 +10,12 @@ let io: SocketServer | null = null;
  * Sets up the `join-rfq` event for room-based broadcasting.
  */
 export function initSocketServer(httpServer: Server) {
+  const pubClient = createRedisConnection("socket-pub");
+  const subClient = pubClient.duplicate();
+
   io = new SocketServer(httpServer, {
     cors: { origin: "*" },
+    adapter: createAdapter(pubClient, subClient),
   });
 
   io.on("connection", (socket) => {

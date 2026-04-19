@@ -144,6 +144,7 @@ export default function SupplierLiveAuction() {
       await bidService.placeBid(rfqId, {
         ...data,
         quote_validity: new Date(data.quote_validity).toISOString(),
+        client_bid_id: crypto.randomUUID(),
       });
       setBidSuccess(true);
       reset();

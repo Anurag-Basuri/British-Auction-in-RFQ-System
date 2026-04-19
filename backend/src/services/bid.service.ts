@@ -15,6 +15,7 @@ export async function createBid(
     destination_charges: number;
     transit_time: string;
     quote_validity: Date;
+    client_bid_id?: string;
   },
 ) {
   const timestamp = new Date();
@@ -23,6 +24,16 @@ export async function createBid(
     dto.freight_charges + dto.origin_charges + dto.destination_charges;
 
   return prisma.$transaction(async (tx: any) => {
+    // Step 0: Check Idempotency Key
+    if (dto.client_bid_id) {
+      const existingBid = await tx.bid.findUnique({
+        where: { client_bid_id: dto.client_bid_id },
+        include: { supplier: { select: { email: true } } },
+      });
+      if (existingBid) {
+        return { bid: existingBid, close_time: null }; // Return null/unchanged for close_time since it was already handled
+      }
+    }
     // Step 1: Validate RFQ exists and is Active.
     const rfq = await tx.rfq.findUnique({ where: { id: rfqId } });
     if (!rfq) throw new ApiError(404, "RFQ not found");
@@ -76,6 +87,7 @@ export async function createBid(
         transit_time: dto.transit_time,
         quote_validity: dto.quote_validity,
         timestamp,
+        client_bid_id: dto.client_bid_id,
       },
       include: { supplier: { select: { email: true } } },
     });
