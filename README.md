@@ -8,14 +8,14 @@ Designed for enterprise scale, this platform mathematically enforces auction int
 
 ## ⚡ Core Features
 
-- **Real-Time Live Bidding Arenas:** Sub-second latency utilizing **Socket.IO** for instantaneous bid unshifting, live timer updates, and contextual leaderboard recalculations. Optimistic UI updates guarantee zero perceived latency for the bidder.
+- **Real-Time Live Bidding Arenas:** Sub-second latency utilizing **Gorilla WebSockets** bridged over **Redis Pub/Sub** for instantaneous bid unshifting, live timer updates, and contextual leaderboard recalculations. Optimistic UI updates guarantee zero perceived latency for the bidder.
 - **Dynamic Auction Extensions (British Mechanics):** Built-in "British Auction" mechanics. If a supplier places a competitive bid within the final `X` minutes (the Trigger Window), the auction autonomously extends by `Y` minutes. This entirely prevents "auction sniping" and encourages true market-value price discovery.
-- **Intelligent Scheduling Engine:** Powered by **Redis & BullMQ**. The system schedules pinpoint accurate closures using background workers that evaluate state and cleanly transition auction statuses from `ACTIVE` to `CLOSED`. Heavy state modifications are offloaded from the main Node event loop.
+- **Intelligent Scheduling Engine:** Powered by **Redis & Asynq**. The system schedules pinpoint accurate closures using background workers that evaluate state and cleanly transition auction statuses from `ACTIVE` to `CLOSED`. Heavy state modifications are offloaded from the main HTTP request flow.
 - **Unique Competitor Leaderboards:** Advanced frontend filtering drops raw bid logs replacing them with true unique competitor mapping, eliminating psychological spoofing from opponents.
 - **Premium Glassmorphic UX/UI:** Frontend designed with deep midnight dark-mode aesthetics, custom CSS variable tokens, Framer Motion staggered micro-animations, and exact-dimension skeleton loading states targeting zero layout shifts.
 - **Operational UX Controls:** Features aggressive tooling without rule violations. Buyers have a `Force Finalize Market` protocol to freeze auctions manually without breaching maximum limits. Suppliers utilize `-1%`, `-5%`, and `-10%` Quick Action desks for calculated edge-attacks.
-- **Strongly Typed Data Fortresses:** End-to-end type safety. Data flows securely from the PostgreSQL Database (via Prisma ORM), through Express/Zod validation controllers, across the wire, and directly into the Next.js Client `useQuery` hooks with mirrored TypeScript interfaces.
-- **Authentication & RBAC:** Features Google OAuth One-Tap sign on alongside Email/Password protocols. Strict topological separation. **Buyers** can create and monitor auctions, **Suppliers** can bid and scan markets via the Execution Terminal.
+- **Strongly Typed Data Fortresses:** End-to-end type safety. Data flows securely from the PostgreSQL Database (via GORM), through Go validation handlers, across the wire, and directly into the Next.js Client `useQuery` hooks.
+- **Authentication & RBAC:** Features strict Google OAuth One-Tap sign on alongside Bcrypt-hashed Email/Password protocols. Strict topological separation. **Buyers** can create and monitor auctions, **Suppliers** can bid and scan markets via the Execution Terminal.
 
 ---
 
@@ -24,14 +24,14 @@ Designed for enterprise scale, this platform mathematically enforces auction int
 ### Backend Infrastructure
 | Component | Technology | Purpose |
 | :--- | :--- | :--- |
-| **Runtime** | Node.js (Express) | High-performance asynchronous API foundation |
-| **Language** | TypeScript | Strict compilation and interface definition |
+| **Language** | Go (Golang 1.22+) | High-performance, concurrent, statically typed backend |
+| **API Framework** | go-chi/chi | Standard-library compatible HTTP routing |
 | **Database** | PostgreSQL | Relational transactional integrity |
-| **ORM** | Prisma | Schema management, type-safe queries, migrations |
-| **Message Broker** | Redis (Upstash) | In-memory datastore for fast Socket/Queue bridging |
-| **Job Scheduler** | BullMQ | Reliable, recurring, and delayed background execution |
-| **Real-Time Engine** | Socket.IO | Multiplexed WebSocket broadcasting |
-| **Validation** | Zod | Runtime payload verification (DTOs) |
+| **ORM** | GORM | Code-first schema management and queries |
+| **Message Broker** | Redis | In-memory datastore for fast Socket/Queue bridging |
+| **Job Scheduler** | Asynq | Reliable, recurring, and delayed background execution |
+| **Real-Time Engine** | Gorilla WebSockets | High-throughput concurrent socket connections |
+| **Validation** | validator/v10 | Runtime payload verification (DTOs) |
 
 ### Frontend Architecture
 | Component | Technology | Purpose |
@@ -48,32 +48,34 @@ Designed for enterprise scale, this platform mathematically enforces auction int
 
 ## 📂 Repository Structure
 
-The architecture is strictly divided into a scalable mono-repo.
+The architecture is strictly divided into a scalable mono-repo, with the primary backend written in Go and the legacy Node.js backend preserved for reference.
 
-For deep technical analysis of how data flows through each environment, review our localized architecture document:
-- 👉 **[Root Architecture Documentation](./ARCHITECTURE.md)** — Covers dependency injection, transactions, worker orchestration, and unique frontend rendering logic.
+For deep technical analysis of how data flows through the Go backend, review our localized architecture document:
+- 👉 **[Backend Architecture Documentation](./backend/ARCHITECTURE.md)** — Covers dependency injection, transactions, worker orchestration, and scaling.
 
 ```text
 british-auction-rfq/
-├── backend/
-│   ├── prisma/             # Schema definitions & PostgreSQL migrations
-│   ├── src/
-│   │   ├── controllers/    # Route handlers bridging Express Router -> Services
-│   │   ├── services/       # Core business logic (Bidding algorithms, RFQ state)
-│   │   ├── routes/         # Express endpoint definitions & RBAC Guards
-│   │   ├── scheduler/      # BullMQ worker instances (Auction close listeners)
-│   │   ├── lib/            # Singletons (Redis client, Socket.IO emitter)
-│   │   └── utils/          # Standardized ApiResponse & custom ApiError taxonomy
-│   └── scratch/            # Contains backend E2E integration test scripts
+├── backend/                  # (Active) High-Performance Go Backend
+│   ├── cmd/api/              # Application entry point (main.go)
+│   ├── internal/
+│   │   ├── api/              # Route handlers (Controllers) and Middlewares
+│   │   ├── config/           # Environment parsing
+│   │   ├── domain/           # Core models (User, Rfq, Bid)
+│   │   ├── repository/       # Data Access Layer (GORM interfaces)
+│   │   ├── service/          # Core business logic (Extension Engine, Bidding logic)
+│   │   ├── websocket/        # Real-time Hub, connections, and Redis Pub/Sub
+│   │   └── worker/           # Asynq Tasks (Auction closures)
+│   └── pkg/                  # Shared utilities and error handling
 │
-└── frontend/
+├── backend-node-deprecated/  # (Legacy) Original Express.js Implementation
+│
+└── frontend/                 # React / Next.js Client
     ├── src/
-    │   ├── app/            # Next.js App Router Pages & Layouts
-    │   ├── providers/      # Tanstack React Query & Auth global Context Providers
-    │   ├── services/       # Typed fetching wrappers mapping exactly to backend DTOs
-    │   ├── lib/            # Axios API client interceptor logic & Socket.IO client singleton
-    │   └── types/          # Typescript interfaces strictly matching Prisma models
-    └── scratch/            # Contains frontend E2E integration test scripts
+    │   ├── app/              # Next.js App Router Pages & Layouts
+    │   ├── providers/        # Tanstack React Query & Auth global Context Providers
+    │   ├── services/         # Typed fetching wrappers mapping exactly to backend DTOs
+    │   └── lib/              # Axios API client interceptor logic & Socket client singleton
+    └── scratch/              # Contains frontend E2E integration test scripts
 ```
 
 ---
@@ -82,41 +84,40 @@ british-auction-rfq/
 
 ### Prerequisites
 Before initializing the platform, verify your host machine has:
-- **Node.js** v18.0.0 or higher
-- **PostgreSQL** instance (Local or hosted via Supabase / Neon)
-- **Redis** instance (Local or hosted via Upstash / AWS ElastiCache)
+- **Go** v1.22.0 or higher (for the backend)
+- **Node.js** v18.0.0 or higher (for the frontend)
+- **PostgreSQL** instance (Local or hosted)
+- **Redis** instance (Local or hosted)
 
 ### 1. Backend Configuration & Boot Sequence
 
-Initialize the backend first. This ensures the database schema is built and the Redis queue is ready.
+Initialize the backend first. The Go backend will automatically detect your PostgreSQL database and auto-migrate the schema for you on boot.
 
 You must configure the `.env` file in the `backend` directory.
-*(Note: If using connection poolers like Supabase's pgBouncer, ensure `DIRECT_URL` points to port 5432 and `DATABASE_URL` points to port 6543).*
 
 ```env
 # backend/.env
-DATABASE_URL="postgresql://postgres.[ID]:[PASSWORD]@aws.pooler.supabase.com:6543/postgres?pgbouncer=true"
-DIRECT_URL="postgresql://postgres.[ID]:[PASSWORD]@aws.pooler.supabase.com:5432/postgres"
+PORT=8000
+NODE_ENV=development
 
-# Note the rediss:// prefix for secure TLS connections if using managed Redis
-REDIS_URL="rediss://default:[PASSWORD]@your-redis-instance.upstash.io:6379"
+DATABASE_URL="postgres://postgres:password@localhost:5432/british_auction?sslmode=disable"
+REDIS_URL="redis://localhost:6379"
 
-JWT_SECRET="YOUR_SECURE_RANDOMLY_GENERATED_STRING"
-PORT=3000
+JWT_SECRET="YOUR_SECURE_RANDOMLY_GENERATED_STRING_MINIMUM_16_CHARS"
+GOOGLE_CLIENT_ID="your_google_cloud_oauth_client_id.apps.googleusercontent.com"
 ```
 
 Boot the server:
 ```bash
 cd backend
-npm install
 
-# Force the database schema to synchronize (Creates tables locally)
-npx prisma db push --accept-data-loss
+# Download all Go dependencies
+go mod tidy
 
-# Start the development environment (utilizes tsx for hot-reloading)
-npm run dev
+# Start the server (which will also connect to DB and Redis)
+go run cmd/api/main.go
 ```
-Wait to see: `✅ Connected to PostgreSQL` and `✅ Connected to Redis`.
+Wait to see: `Connected to PostgreSQL database successfully` and `Server starting on :8000`.
 
 ### 2. Frontend Configuration & Boot Sequence
 
@@ -124,10 +125,9 @@ Open an independent terminal. The frontend environment dictates its connection p
 
 ```env
 # frontend/.env.local
-NEXT_PUBLIC_API_URL=http://localhost:3000
-NEXT_PUBLIC_WS_URL=http://localhost:3000
+NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_WS_URL=ws://localhost:8000
 NEXT_PUBLIC_GOOGLE_CLIENT_ID=your_google_cloud_oauth_client_id.apps.googleusercontent.com
-
 ```
 
 Boot the client:
@@ -135,7 +135,7 @@ Boot the client:
 cd frontend
 npm install
 
-# Next.js will auto-resolve port conflicts and launch on http://localhost:3001
+# Next.js will launch on http://localhost:3000
 npm run dev
 ```
 
@@ -145,29 +145,14 @@ npm run dev
 
 ### Authentication Flow
 We utilize stateless JWT (JSON Web Tokens).
-- **Backend:** The `authMiddleware` verifies the JWT signature and injects the authenticated `req.user` payload into the Express request lifecycle.
+- **Backend:** The `AuthMiddleware` verifies the JWT signature and injects the authenticated `Claims` payload into the Request Context lifecycle. Google Logins strictly validate against the configured Client ID to prevent Confused Deputy vulnerabilities.
 - **Frontend:** An Axios Request Interceptor autonomously extracts the JWT from browser `localStorage` and attaches it as a `Bearer` header to every single outgoing HTTP request.
 
 ### Centralized Exception Handling
-We enforce a strict `ApiError` taxonomy. If a Zod validation fails, or an Unauthorized event occurs, the backend sends a tightly formatted JSON envelope. The frontend Axios Response Interceptor catches `401 Unauthorized` responses and broadcasts an application-wide Window Event. The React `AuthProvider` captures this event, instantly purges local state, and forcibly redirecting the user to `/auth/login` to prevent stale data leaks.
+We enforce a strict `APIError` taxonomy. If a validation fails, or an Unauthorized event occurs, the backend sends a tightly formatted JSON envelope. The frontend Axios Response Interceptor catches `401 Unauthorized` responses and broadcasts an application-wide Window Event. The React `AuthProvider` captures this event, instantly purges local state, and forcibly redirecting the user to `/auth/login` to prevent stale data leaks.
 
----
-
-## 🧪 Validating System Health (E2E Integration)
-
-We provide headless integration scripts to mathematically prove the infrastructure works before executing visual UI testing.
-
-**Test the BullMQ Extension Engine:**
-```bash
-cd backend
-npx tsx scratch/api_test.ts
-```
-**What this script does:**
-1. Generates 2 ephemeral accounts (Buyer + Supplier).
-2. The Buyer spins up an RFQ with a 15-second total lifespan and a 5-second trigger window.
-3. The script waits precisely 12 seconds (breaching the trigger window).
-4. The Supplier fires a bid.
-5. The script listens to the backend and proves the BullMQ background worker gracefully extended the auction closure, defying the original hard-close timestamp.
+### Transactional Safety
+When a bid is placed, the backend uses `gorm.DB.Transaction` to wrap the idempotency check, price validation, auction extension evaluation, and log insertion into a single atomic commit, guaranteeing zero race conditions during high-contention auction closures.
 
 ---
 
@@ -178,10 +163,9 @@ This is an open-source enterprise standard project. Contributions are heavily en
 **Standard Operating Procedure:**
 1. Fork the repository.
 2. Create a feature branch tightly scoped to a specific issue (`git checkout -b feature/AmazingFeature`).
-3. Ensure absolute Type Safety. Do not use `any` bypasses in TypeScript.
-4. If modifying the API layer, ensure you update the Swagger/Zod schema layer first.
-5. Commit your changes utilizing semantic commit messages.
-6. Push to the branch and open a Pull Request against `main`.
+3. Ensure absolute Type Safety.
+4. Commit your changes utilizing semantic commit messages.
+5. Push to the branch and open a Pull Request against `main`.
 
 ## 📄 License
 
