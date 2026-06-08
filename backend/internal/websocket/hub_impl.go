@@ -105,7 +105,7 @@ func (h *HubImpl) run() {
 // listenRedis subscribes to a global Redis channel to receive messages from other instances
 func (h *HubImpl) listenRedis() {
 	ctx := context.Background()
-	pubsub := h.redisClient.Subscribe(ctx, "rfq_events")
+	pubsub := h.redisClient.Subscribe(ctx, "british_auction_rfq_events")
 	defer pubsub.Close()
 
 	ch := pubsub.Channel()
@@ -127,7 +127,7 @@ func (h *HubImpl) publishToRedis(msg *Message) {
 		log.Printf("Error marshalling message for redis: %v", err)
 		return
 	}
-	err = h.redisClient.Publish(ctx, "rfq_events", payload).Err()
+	err = h.redisClient.Publish(ctx, "british_auction_rfq_events", payload).Err()
 	if err != nil {
 		log.Printf("Error publishing to redis: %v", err)
 	}

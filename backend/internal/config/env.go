@@ -11,9 +11,10 @@ import (
 type Env struct {
 	Port         int
 	NodeEnv      string
-	DatabaseURL  string
-	RedisURL     string
-	JWTSecret    string
+	DatabaseURL    string
+	RedisURL       string
+	JWTSecret      string
+	GoogleClientID string
 }
 
 var AppEnv Env
@@ -28,9 +29,10 @@ func InitEnv() {
 	AppEnv = Env{
 		Port:        getEnvAsInt("PORT", 8000),
 		NodeEnv:     getEnv("NODE_ENV", "development"),
-		DatabaseURL: getEnv("DATABASE_URL", ""),
-		RedisURL:    getEnv("REDIS_URL", "redis://localhost:6379"),
-		JWTSecret:   getEnv("JWT_SECRET", ""),
+		DatabaseURL:    getEnv("DATABASE_URL", ""),
+		RedisURL:       getEnv("REDIS_URL", "redis://localhost:6379"),
+		JWTSecret:      getEnv("JWT_SECRET", ""),
+		GoogleClientID: getEnv("GOOGLE_CLIENT_ID", ""),
 	}
 
 	if AppEnv.DatabaseURL == "" {

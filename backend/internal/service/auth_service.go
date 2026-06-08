@@ -1,6 +1,7 @@
 package service
 
 import (
+	"british-auction-backend/internal/config"
 	"british-auction-backend/internal/domain"
 	"british-auction-backend/internal/repository"
 	"british-auction-backend/pkg/errors"
@@ -78,7 +79,11 @@ func (s *authService) Login(email, password string) (string, *domain.User, error
 }
 
 func (s *authService) GoogleLogin(token string, role domain.Role) (string, *domain.User, error) {
-	payload, err := idtoken.Validate(context.Background(), token, "") // empty audience accepts any client ID for simplicity
+	if config.AppEnv.GoogleClientID == "" {
+		return "", nil, errors.NewAPIError(500, "Google Login is not configured on the server")
+	}
+
+	payload, err := idtoken.Validate(context.Background(), token, config.AppEnv.GoogleClientID)
 	if err != nil {
 		return "", nil, errors.NewAPIError(401, "Invalid Google token")
 	}
